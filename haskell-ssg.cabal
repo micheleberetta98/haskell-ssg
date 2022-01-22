@@ -23,7 +23,8 @@ author:             Beretta Michele
 -- extra-source-files: 
 
 library
-    -- exposed-modules:  Parser
+    exposed-modules:  Parser
+                    , Document
     build-depends:    base ^>=4.14.3.0
                     , megaparsec
                     , text
