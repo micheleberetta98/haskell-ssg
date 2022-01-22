@@ -8,13 +8,14 @@ data Document = Document Config [Content]
 data Config = Config
   { pageTitle :: Text
   , customCss :: Maybe Text
-  , layout    :: Text
+  , layout    :: Name
   } deriving (Show)
 
 data Content
-  = Block Text AttrList [Content]
-  | Unquote Text
+  = Block Name AttrList [Content]
+  | Unquote Name
   | Literals Text
   deriving (Show)
 
 type AttrList = [(Text, Text)]
+type Name = Text
