@@ -14,7 +14,7 @@ data Config = Config
 data Content
   = Block Name AttrList [Content]
   | Unquote Name
-  | Literals Text
+  | String Text
   deriving (Show)
 
 type AttrList = [(Text, Text)]

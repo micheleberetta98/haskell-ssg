@@ -14,3 +14,4 @@ parserSpec =
       parse stringedLiteral "" "\"This is a string\""   `shouldParse` "This is a string"
       parse stringedLiteral "" "\"This is a (string)\"" `shouldParse` "This is a (string)"
       parse stringedLiteral "" "\"This is @a string\""  `shouldParse` "This is @a string"
+      parse stringedLiteral "" "\"  string with spaces  \"  " `shouldParse` "  string with spaces  "
