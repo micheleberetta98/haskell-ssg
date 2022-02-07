@@ -15,7 +15,7 @@ data Content
   = Block Name AttrList [Content]
   | Unquote Name
   | String Text
-  deriving (Show)
+  deriving (Show, Eq)
 
 type AttrList = [(Text, Text)]
 type Name = Text

@@ -11,6 +11,25 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 type Parser = Parsec Void Text
 
+content :: Parser [Content]
+content = many $ choice
+  [ block
+  , unquote
+  , contentString
+  ]
+
+block :: Parser Content
+block = parens "(" ")" (Block <$> identifier <*> option [] attrList <*> content)
+  where
+    attrList = parens "[" "]" $ many attrTuple
+    attrTuple = (,) <$> identifier <*> stringedLiteral
+
+unquote :: Parser Content
+unquote = Unquote <$> (char '@' *> identifier)
+
+contentString :: Parser Content
+contentString = String <$> stringedLiteral
+
 stringedLiteral :: Parser Text
 stringedLiteral = between (char '"') (symbol "\"") $ T.pack <$> many
   ( choice
@@ -20,10 +39,7 @@ stringedLiteral = between (char '"') (symbol "\"") $ T.pack <$> many
   )
 
 identifier :: Parser Text
-identifier = lexeme $ T.pack <$> do
-  c  <- satisfy isAlpha
-  cs <- many (noneOf ['\n', ' ', '(', ')', '[', ']'])
-  pure (c : cs)
+identifier = lexeme $ T.pack <$> some (noneOf ['\n', ' ', '(', ')', '[', ']'])
 
 parens :: Text -> Text -> Parser a -> Parser a
 parens open close = between (symbol open) (symbol close)
