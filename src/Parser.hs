@@ -20,18 +20,32 @@ config = parens "{" "}" $ runPermutation $
   where
     key s = symbol s *> stringedLiteral
 
-content :: Parser [Content]
-content = many $ choice
+content :: Parser Content
+content = choice
   [ block
   , unquote
   , contentString
   ]
 
 block :: Parser Content
-block = parens "(" ")" (Block <$> identifier <*> option [] attrList <*> content)
+block = parens "(" ")"  $
+  Block
+    <$> identifier
+    <*> option [] attrList
+    <*> (blockContent <|> pure [])
   where
-    attrList = parens "[" "]" $ many attrTuple
+    attrList = parens "[" "]" (many attrTuple)
     attrTuple = (,) <$> identifier <*> stringedLiteral
+    blockContent = ([] <$ eof) <|> do
+      c <- lookAhead anySingle
+      if c == ')'
+        then pure []
+        else (:) <$> recover content <*> blockContent
+    recover = withRecovery $ \e -> do
+      registerParseError e
+      many (anySingleBut ' ')
+      char ' '
+      pure (String "")
 
 unquote :: Parser Content
 unquote = Unquote <$> (char '@' *> identifier)
