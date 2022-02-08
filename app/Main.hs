@@ -1,4 +1,12 @@
 module Main where
 
+import           Server
+import           System.Environment
+
 main :: IO ()
-main = putStrLn "Hello, Haskell!"
+main = do
+  port <- getPort 4000
+  serve "_build" port
+
+getPort :: Int -> IO Int
+getPort defaultPort = maybe defaultPort read <$> lookupEnv "PORT"
