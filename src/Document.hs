@@ -9,7 +9,7 @@ data Config = Config
   { pageTitle :: Text
   , customCss :: Maybe Text
   , layout    :: Name
-  } deriving (Show)
+  } deriving (Show, Eq)
 
 data Content
   = Block Name AttrList [Content]

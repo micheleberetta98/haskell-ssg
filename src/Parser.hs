@@ -1,15 +1,24 @@
 module Parser where
 
-import           Data.Char
-import           Data.Text                  (Text)
-import qualified Data.Text                  as T
-import           Data.Void                  (Void)
+import           Control.Applicative.Permutations
+import           Data.Text                        (Text)
+import qualified Data.Text                        as T
+import           Data.Void                        (Void)
 import           Document
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as L
+import qualified Text.Megaparsec.Char.Lexer       as L
 
 type Parser = Parsec Void Text
+
+config :: Parser Config
+config = parens "{" "}" $ runPermutation $
+  Config
+    <$> toPermutation (key "title")
+    <*> toPermutationWithDefault Nothing (Just <$> key "custom-css")
+    <*> toPermutationWithDefault "default" (key "layout")
+  where
+    key s = symbol s *> stringedLiteral
 
 content :: Parser [Content]
 content = many $ choice

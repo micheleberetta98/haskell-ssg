@@ -44,3 +44,10 @@ parserSpec =
       parse block "" "[nl]" `shouldSatisfy` isLeft
       parse block "" "(nl [class red])" `shouldSatisfy` isLeft
       parse block "" "()" `shouldSatisfy` isLeft
+
+    it "should parse correct configs" $ do
+      parse config "" "{ title \"Title\" custom-css \"/custom.css\" layout \"fancy\" }" `shouldParse` Config "Title" (Just "/custom.css") "fancy"
+      parse config "" "{ title \"Title\" layout \"fancy\" }" `shouldParse` Config "Title" Nothing "fancy"
+      parse config "" "{ title \"Title\" }" `shouldParse` Config "Title" Nothing "default"
+      parse config "" "{ layout \"fancy\" custom-css \"/custom.css\" title \"Title\" }" `shouldParse` Config "Title" (Just "/custom.css") "fancy"
+      parse config "" "{}" `shouldSatisfy` isLeft
