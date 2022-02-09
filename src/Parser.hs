@@ -1,6 +1,6 @@
 module Parser
   ( document
-  , layout
+  , macro
   , parseFile
   )
 where

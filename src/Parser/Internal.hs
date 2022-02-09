@@ -6,6 +6,7 @@ import           Data.Text                        (Text)
 import qualified Data.Text                        as T
 import           Data.Void                        (Void)
 import           Document
+import           Macro
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer       as L
@@ -19,8 +20,10 @@ type Parser = Parsec Void Text
 document :: Parser Document
 document = Document <$> config <*> many content
 
-layout :: Parser Layout
-layout = Layout <$> many content
+macro :: Parser Macro
+macro = recoverListWith (Macro "" [])
+  $ parens "(" ")"
+  $ symbol "macro" *> (Macro <$> identifier <*> many content)
 
 config :: Parser Config
 config = parens "{" "}" $ runPermutation $
@@ -40,16 +43,15 @@ content = choice
   ]
 
 list :: Parser Content
-list = recover $ parens "(" ")" $
-  List
+list = listWithHead identifier
+
+listWithHead :: Parser Text -> Parser Content
+listWithHead h = recoverListWith (List "" (AttrList []) [])
+  $ parens "(" ")"
+  $ List
     <$> identifier
     <*> option (AttrList []) attrList
     <*> many content
-  where
-    recover = withRecovery $ \e -> do
-      registerParseError e
-      some (anySingleBut ')')
-      pure (List "" (AttrList []) [])
 
 quote :: Parser Content
 quote = lexeme $ Quote <$> (char '#' *> (freeString <|> content))
@@ -73,6 +75,12 @@ attrList = AttrList <$> recover (parens "[" "]" (many attrTuple))
       many (noneOf specialChars)
       space1
       pure []
+
+recoverListWith :: a -> Parser a -> Parser a
+recoverListWith x = withRecovery $ \e -> do
+      registerParseError e
+      some (anySingleBut ')')
+      pure x
 
 stringedLiteral :: Parser Text
 stringedLiteral = between (char '"') (symbol "\"") $

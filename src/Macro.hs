@@ -1,5 +1,10 @@
 module Macro where
 
+import           Data.Text (Text)
 import           Document
 
-newtype Layout = Layout [Content]
+data Macro = Macro
+  { name :: Text
+  , body :: [Content]
+  }
+  deriving (Show, Eq)

@@ -4,6 +4,7 @@ module ParserSpec (parserSpec) where
 
 import           Data.Either
 import           Document
+import           Macro
 import           Parser.Internal
 import           Test.Hspec
 import           Test.Hspec.Megaparsec
@@ -30,6 +31,13 @@ parserSpec =
       parse identifier "" "" `shouldSatisfy` isLeft
       parse identifier "" "\n" `shouldSatisfy` isLeft
       parse identifier "" "(identifierfier)" `shouldSatisfy` isLeft
+
+    it "should parse macros" $ do
+      parse macro "" "(macro hi)" `shouldParse` Macro "hi" []
+      parse macro "" "(macro how-are-you @title @content)" `shouldParse` Macro "how-are-you" [Unquote "title", Unquote "content"]
+      parse macro "" "(Macro hi)" `shouldSatisfy` isLeft
+      parse macro "" "(macro ())" `shouldSatisfy` isLeft
+      parse macro "" "(Macro {test})" `shouldSatisfy` isLeft
 
     it "should parse quoted stuff" $ do
       parse quote "" "#quote" `shouldParse` Quote (String "quote")
