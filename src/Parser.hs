@@ -1,6 +1,7 @@
 module Parser where
 
 import           Control.Applicative.Permutations
+import           Data.Char                        (isAlpha)
 import           Data.Text                        (Text)
 import qualified Data.Text                        as T
 import           Data.Void                        (Void)
@@ -34,17 +35,22 @@ block = parens "(" ")"  $
     <*> option [] attrList
     <*> (blockContent <|> pure [])
   where
-    attrList = parens "[" "]" (many attrTuple)
+    attrList = recoverAttrList $ parens "[" "]" (many attrTuple)
     attrTuple = (,) <$> identifier <*> stringedLiteral
-    blockContent = ([] <$ eof) <|> do
+    blockContent = do
       c <- lookAhead anySingle
       if c == ')'
         then pure []
-        else (:) <$> recover content <*> blockContent
-    recover = withRecovery $ \e -> do
+        else (:) <$> recoverContent content <*> blockContent
+    recoverAttrList = withRecovery $ \e -> do
       registerParseError e
-      many (anySingleBut ' ')
-      char ' '
+      many (noneOf specialChars)
+      space1
+      pure []
+    recoverContent = withRecovery $ \e -> do
+      registerParseError e
+      many (noneOf specialChars)
+      lexeme (satisfy (/= ')'))
       pure (String "")
 
 unquote :: Parser Content
@@ -62,7 +68,10 @@ stringedLiteral = between (char '"') (symbol "\"") $ T.pack <$> many
   )
 
 identifier :: Parser Text
-identifier = lexeme $ T.pack <$> some (noneOf ['\n', ' ', '(', ')', '[', ']'])
+identifier = lexeme $ do
+  c <- satisfy isAlpha
+  cs <- many (noneOf specialChars)
+  pure $ T.pack (c : cs)
 
 parens :: Text -> Text -> Parser a -> Parser a
 parens open close = between (symbol open) (symbol close)
@@ -75,3 +84,6 @@ symbol = L.symbol sc
 
 sc :: Parser ()
 sc = L.space space1 empty empty
+
+specialChars :: [Char]
+specialChars = [' ', '(', ')', '[', ']', '\"', '@', '\n']

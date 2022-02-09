@@ -21,8 +21,8 @@ parserSpec =
 
     it "should parse identifiers" $ do
       parse identifier "" "hello" `shouldParse` "hello"
-      parse identifier "" "hello@" `shouldParse` "hello@"
-      parse identifier "" "*a-cool-identifier*" `shouldParse` "*a-cool-identifier*"
+      parse identifier "" "hello@" `shouldParse` "hello"
+      parse identifier "" "a-cool-identifier*" `shouldParse` "a-cool-identifier*"
       parse identifier "" "ident(ifier)" `shouldParse` "ident"
       parse identifier "" "" `shouldSatisfy` isLeft
       parse identifier "" "\n" `shouldSatisfy` isLeft
@@ -30,7 +30,7 @@ parserSpec =
 
     it "should parse unquotes" $ do
       parse unquote "" "@param-name" `shouldParse` Unquote "param-name"
-      parse unquote "" "@/strange*name" `shouldParse` Unquote "/strange*name"
+      parse unquote "" "@strange/name" `shouldParse` Unquote "strange/name"
       parse unquote "" "" `shouldSatisfy` isLeft
       parse unquote "" "not@valid" `shouldSatisfy` isLeft
 
