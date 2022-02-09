@@ -5,4 +5,4 @@ repl:
 	cabal repl
 
 cli:
-	cabal repl app/Main.css
+	cabal repl app/Main.hs
