@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module ParserSpec (parserSpec) where
 
 import           Data.Either

@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module MacroSpec (macroSpec) where
 
 import           Data.Either

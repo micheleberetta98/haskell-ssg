@@ -70,3 +70,4 @@ test-suite haskell-ssg-test
                     , hspec-megaparsec
                     , megaparsec
     default-language: Haskell2010
+    default-extensions: OverloadedStrings
