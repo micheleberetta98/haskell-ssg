@@ -1,7 +1,7 @@
 module Parser where
 
 import           Control.Applicative.Permutations
-import           Data.Char                        (isAlpha)
+import           Data.Char
 import           Data.Text                        (Text)
 import qualified Data.Text                        as T
 import           Data.Void                        (Void)
@@ -11,6 +11,9 @@ import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer       as L
 
 type Parser = Parsec Void Text
+
+document :: Parser Document
+document = Document <$> config <*> many content
 
 config :: Parser Config
 config = parens "{" "}" $ runPermutation $

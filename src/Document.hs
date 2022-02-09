@@ -3,7 +3,7 @@ module Document where
 import           Data.Text (Text)
 
 data Document = Document Config [Content]
-  deriving (Show)
+  deriving (Show, Eq)
 
 data Config = Config
   { pageTitle :: Text
