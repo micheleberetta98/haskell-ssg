@@ -60,12 +60,13 @@ contentString :: Parser Content
 contentString = String <$> stringedLiteral
 
 stringedLiteral :: Parser Text
-stringedLiteral = between (char '"') (symbol "\"") $ T.pack <$> many
-  ( choice
-    [ char '\\' *> anySingle
-    , anySingleBut '\"'
-    ]
-  )
+stringedLiteral = between (char '"') (symbol "\"") $
+  T.pack <$> many
+    ( choice
+      [ char '\\' *> anySingle
+      , anySingleBut '\"'
+      ]
+    )
 
 identifier :: Parser Text
 identifier = lexeme $ do
