@@ -16,7 +16,8 @@ data Config = Config
   } deriving (Show, Eq)
 
 data Content
-  = Block Text AttrList [Content]
+  = List Text AttrList [Content]
+  | Quote Content
   | Unquote Text
   | String Text
   deriving (Show, Eq)
@@ -35,9 +36,10 @@ applyLayout doc@(Document config content) layouts = expand doc <$> lookup (confi
 expand :: Document -> Layout -> [Content]
 expand (Document config content) (Layout l) = concatMap expand' l
   where
+    expand' (Quote c)             = [c]
     expand' (Unquote "pageTitle") = [String (pageTitle config)]
     expand' (Unquote "content")   = content
-    expand' (Block b attrList c)  = [Block b attrList (concatMap expand' c)]
+    expand' (List b attrList c)   = [List b attrList (concatMap expand' c)]
     expand' (String s)            = [String s]
     expand' _                     = []
 
@@ -47,9 +49,9 @@ instance ToHTML a => ToHTML [a] where
   toHTML = T.concat . map toHTML
 
 instance ToHTML Content where
-  toHTML (String s)    = s
-  toHTML (Block p a c) = tag' p a (toHTML c)
-  toHTML _             = ""
+  toHTML (String s)   = s
+  toHTML (List p a c) = tag' p a (toHTML c)
+  toHTML _            = ""
 
 instance ToHTML AttrList where
   toHTML (AttrList attrs) = T.concat (map toPair attrs)

@@ -33,28 +33,28 @@ config = parens "{" "}" $ runPermutation $
 
 content :: Parser Content
 content = choice
-  [ block
+  [ quote
   , unquote
   , contentString
+  , list
   ]
 
-block :: Parser Content
-block = parens "(" ")"  $
-  Block
+list :: Parser Content
+list = recover $ parens "(" ")" $
+  List
     <$> identifier
     <*> option (AttrList []) attrList
-    <*> (blockContent <|> pure [])
+    <*> many content
   where
-    blockContent = do
-      c <- lookAhead anySingle
-      if c == ')'
-        then pure []
-        else (:) <$> recover content <*> blockContent
     recover = withRecovery $ \e -> do
       registerParseError e
-      many (noneOf specialChars)
-      lexeme (satisfy (/= ')'))
-      pure (String "")
+      some (anySingleBut ')')
+      pure (List "" (AttrList []) [])
+
+quote :: Parser Content
+quote = lexeme $ Quote <$> (char '#' *> (freeString <|> content))
+  where
+    freeString = String . T.pack <$> some (noneOf specialChars)
 
 unquote :: Parser Content
 unquote = Unquote <$> (char '@' *> identifier)
@@ -102,4 +102,4 @@ sc :: Parser ()
 sc = L.space space1 empty empty
 
 specialChars :: [Char]
-specialChars = [' ', '(', ')', '[', ']', '\"', '@', '\n']
+specialChars = [' ', '(', ')', '[', ']', '\"', '@', '#', '\n']
