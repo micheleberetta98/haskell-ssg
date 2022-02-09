@@ -29,6 +29,7 @@ library
                     , Server
                     , ToHTML
                     , Macro
+                    , Layout
     build-depends:    base ^>=4.14.3.0
                     , megaparsec
                     , text

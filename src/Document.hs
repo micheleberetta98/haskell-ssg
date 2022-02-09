@@ -25,24 +25,6 @@ data Content
 newtype AttrList = AttrList [(Text, Text)]
   deriving (Show, Eq)
 
-newtype Layout = Layout [Content]
-  deriving (Show, Eq)
-
------------- Layout expansion
-
-applyLayout :: Document -> [(Text, Layout)] -> Maybe [Content]
-applyLayout doc@(Document config content) layouts = expand doc <$> lookup (configLayout config) layouts
-
-expand :: Document -> Layout -> [Content]
-expand (Document config content) (Layout l) = concatMap expand' l
-  where
-    expand' (Quote c)             = [c]
-    expand' (Unquote "pageTitle") = [String (pageTitle config)]
-    expand' (Unquote "content")   = content
-    expand' (List b attrList c)   = [List b attrList (concatMap expand' c)]
-    expand' (String s)            = [String s]
-    expand' _                     = []
-
 ------------ Class instances
 
 instance ToHTML a => ToHTML [a] where
