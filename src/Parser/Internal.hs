@@ -19,6 +19,9 @@ type Parser = Parsec Void Text
 document :: Parser Document
 document = Document <$> config <*> many content
 
+layout :: Parser Layout
+layout = Layout <$> many content
+
 config :: Parser Config
 config = parens "{" "}" $ runPermutation $
   Config
