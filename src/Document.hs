@@ -10,29 +10,27 @@ data Document = Document Config [Content]
   deriving (Show, Eq)
 
 data Config = Config
-  { pageTitle :: Text
-  , customCss :: Maybe Text
-  , layout    :: Name
+  { pageTitle       :: Text
+  , configCustomCss :: Maybe Text
+  , configLayout    :: Text
   } deriving (Show, Eq)
 
 data Content
-  = Block Name AttrList [Content]
-  | Unquote Name
+  = Block Text AttrList [Content]
+  | Unquote Text
   | String Text
   deriving (Show, Eq)
 
 newtype AttrList = AttrList [(Text, Text)]
   deriving (Show, Eq)
 
-type Name = Text
-
 newtype Layout = Layout [Content]
   deriving (Show, Eq)
 
 ------------ Layout expansion
 
-applyLayout :: Document -> [(Name, Layout)] -> Maybe [Content]
-applyLayout doc@(Document config content) layouts = expand doc <$> lookup (layout config) layouts
+applyLayout :: Document -> [(Text, Layout)] -> Maybe [Content]
+applyLayout doc@(Document config content) layouts = expand doc <$> lookup (configLayout config) layouts
 
 expand :: Document -> Layout -> [Content]
 expand (Document config content) (Layout l) = concatMap expand' l
@@ -57,10 +55,10 @@ instance ToHTML AttrList where
   toHTML (AttrList attrs) = T.concat (map toPair attrs)
     where toPair (n, v) = T.concat [n, "=\"", v, "\""]
 
-tag :: Name -> Text -> Text
+tag :: Text -> Text -> Text
 tag name = tag' name (AttrList [])
 
-tag' :: Name -> AttrList -> Text -> Text
+tag' :: Text -> AttrList -> Text -> Text
 tag' name attrList content = T.concat
   [ "<", name, prependSpaceIfNotEmpty (toHTML attrList), ">"
   , content
