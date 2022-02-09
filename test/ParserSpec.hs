@@ -4,7 +4,7 @@ module ParserSpec (parserSpec) where
 
 import           Data.Either
 import           Document
-import           Parser
+import           Parser.Internal
 import           Test.Hspec
 import           Test.Hspec.Megaparsec
 import           Text.Megaparsec
