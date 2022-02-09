@@ -35,12 +35,15 @@ parserSpec =
       parse unquote "" "not@valid" `shouldSatisfy` isLeft
 
     it "should parse blocks" $ do
-      parse block "" "(nl)" `shouldParse` Block "nl" [] []
-      parse block "" "(nl [])" `shouldParse` Block "nl" [] []
-      parse block "" "(b \"string content\")" `shouldParse` Block "b" [] [String "string content"]
-      parse block "" "(a (b (c @d)))" `shouldParse` Block "a" [] [Block "b" [] [Block "c" [] [Unquote "d"]]]
-      parse block "" "(par [class \"red\"] (nl))" `shouldParse` Block "par" [("class", "red")] [Block "nl" [] []]
-      parse block "" "(b\n    \"string content\"\n    (i \"nested\"))" `shouldParse` Block "b" [] [String "string content", Block "i" [] [String "nested"]]
+      let ebl n = Block n (AttrList []) []
+          bl n = Block n (AttrList [])
+
+      parse block "" "(nl)" `shouldParse` ebl "nl"
+      parse block "" "(nl [])" `shouldParse` ebl "nl"
+      parse block "" "(b \"string content\")" `shouldParse` bl "b" [String "string content"]
+      parse block "" "(a (b (c @d)))" `shouldParse` bl "a" [bl "b" [bl "c" [Unquote "d"]]]
+      parse block "" "(par [class \"red\"] (nl))" `shouldParse` Block "par" (AttrList [("class", "red")]) [ebl "nl"]
+      parse block "" "(b\n    \"string content\"\n    (i \"nested\"))" `shouldParse` bl "b" [String "string content", bl "i" [String "nested"]]
       parse block "" "[nl]" `shouldSatisfy` isLeft
       parse block "" "(nl [class red])" `shouldSatisfy` isLeft
       parse block "" "()" `shouldSatisfy` isLeft

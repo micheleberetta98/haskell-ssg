@@ -39,22 +39,15 @@ block :: Parser Content
 block = parens "(" ")"  $
   Block
     <$> identifier
-    <*> option [] attrList
+    <*> option (AttrList []) attrList
     <*> (blockContent <|> pure [])
   where
-    attrList = recoverAttrList $ parens "[" "]" (many attrTuple)
-    attrTuple = (,) <$> identifier <*> stringedLiteral
     blockContent = do
       c <- lookAhead anySingle
       if c == ')'
         then pure []
-        else (:) <$> recoverContent content <*> blockContent
-    recoverAttrList = withRecovery $ \e -> do
-      registerParseError e
-      many (noneOf specialChars)
-      space1
-      pure []
-    recoverContent = withRecovery $ \e -> do
+        else (:) <$> recover content <*> blockContent
+    recover = withRecovery $ \e -> do
       registerParseError e
       many (noneOf specialChars)
       lexeme (satisfy (/= ')'))
@@ -67,6 +60,16 @@ contentString :: Parser Content
 contentString = String <$> stringedLiteral
 
 ------------ Utils
+
+attrList :: Parser AttrList
+attrList = AttrList <$> recover (parens "[" "]" (many attrTuple))
+  where
+    attrTuple = (,) <$> identifier <*> stringedLiteral
+    recover = withRecovery $ \e -> do
+      registerParseError e
+      many (noneOf specialChars)
+      space1
+      pure []
 
 stringedLiteral :: Parser Text
 stringedLiteral = between (char '"') (symbol "\"") $

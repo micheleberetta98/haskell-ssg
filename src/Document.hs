@@ -19,5 +19,6 @@ data Content
   | String Text
   deriving (Show, Eq)
 
-type AttrList = [(Text, Text)]
+newtype AttrList = AttrList [(Text, Text)]
+  deriving (Show, Eq)
 type Name = Text
