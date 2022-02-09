@@ -12,6 +12,9 @@ import           Text.Megaparsec
 parserSpec :: SpecWith ()
 parserSpec =
   describe "Parser" $ do
+    let ebl n = List n (AttrList []) []
+        bl n = List n (AttrList [])
+
     it "should parse string literals" $ do
       parse stringedLiteral "" "\"This is a string\""   `shouldParse` "This is a string"
       parse stringedLiteral "" "\"This is a (string)\"" `shouldParse` "This is a (string)"
@@ -28,25 +31,29 @@ parserSpec =
       parse identifier "" "\n" `shouldSatisfy` isLeft
       parse identifier "" "(identifierfier)" `shouldSatisfy` isLeft
 
-    it "should parse unquotes" $ do
+    it "should parse quoted stuff" $ do
+      parse quote "" "#quote" `shouldParse` Quote (String "quote")
+      parse quote "" "#\"hello there\"" `shouldParse` Quote (String "hello there")
+      parse quote "" "#(nl)" `shouldParse` Quote (ebl "nl")
+      parse quote "" "#" `shouldSatisfy` isLeft
+      parse quote "" "#)" `shouldSatisfy` isLeft
+
+    it "should parse unquoted stuff" $ do
       parse unquote "" "@param-name" `shouldParse` Unquote "param-name"
       parse unquote "" "@strange/name" `shouldParse` Unquote "strange/name"
       parse unquote "" "" `shouldSatisfy` isLeft
       parse unquote "" "not@valid" `shouldSatisfy` isLeft
 
-    it "should parse blocks" $ do
-      let ebl n = Block n (AttrList []) []
-          bl n = Block n (AttrList [])
-
-      parse block "" "(nl)" `shouldParse` ebl "nl"
-      parse block "" "(nl [])" `shouldParse` ebl "nl"
-      parse block "" "(b \"string content\")" `shouldParse` bl "b" [String "string content"]
-      parse block "" "(a (b (c @d)))" `shouldParse` bl "a" [bl "b" [bl "c" [Unquote "d"]]]
-      parse block "" "(par [class \"red\"] (nl))" `shouldParse` Block "par" (AttrList [("class", "red")]) [ebl "nl"]
-      parse block "" "(b\n    \"string content\"\n    (i \"nested\"))" `shouldParse` bl "b" [String "string content", bl "i" [String "nested"]]
-      parse block "" "[nl]" `shouldSatisfy` isLeft
-      parse block "" "(nl [class red])" `shouldSatisfy` isLeft
-      parse block "" "()" `shouldSatisfy` isLeft
+    it "should parse lists" $ do
+      parse list "" "(nl)" `shouldParse` ebl "nl"
+      parse list "" "(nl [])" `shouldParse` ebl "nl"
+      parse list "" "(b \"string content\")" `shouldParse` bl "b" [String "string content"]
+      parse list "" "(a (b (c @d)))" `shouldParse` bl "a" [bl "b" [bl "c" [Unquote "d"]]]
+      parse list "" "(par [class \"red\"] (nl))" `shouldParse` List "par" (AttrList [("class", "red")]) [ebl "nl"]
+      parse list "" "(b\n    \"string content\"\n    (i \"nested\"))" `shouldParse` bl "b" [String "string content", bl "i" [String "nested"]]
+      parse list "" "[nl]" `shouldSatisfy` isLeft
+      parse list "" "(nl [class red])" `shouldSatisfy` isLeft
+      parse list "" "()" `shouldSatisfy` isLeft
 
     it "should parse correct configs" $ do
       parse config "" "{ title \"Title\" custom-css \"/custom.css\" layout \"fancy\" }" `shouldParse` Config "Title" (Just "/custom.css") "fancy"
