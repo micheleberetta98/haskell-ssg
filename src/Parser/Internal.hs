@@ -10,7 +10,11 @@ import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer       as L
 
+------------ Custom types
+
 type Parser = Parsec Void Text
+
+------------ Main entities
 
 document :: Parser Document
 document = Document <$> config <*> many content
@@ -61,6 +65,8 @@ unquote = Unquote <$> (char '@' *> identifier)
 
 contentString :: Parser Content
 contentString = String <$> stringedLiteral
+
+------------ Utils
 
 stringedLiteral :: Parser Text
 stringedLiteral = between (char '"') (symbol "\"") $

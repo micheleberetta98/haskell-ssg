@@ -2,6 +2,8 @@ module Document where
 
 import           Data.Text (Text)
 
+------------ Custom types
+
 data Document = Document Config [Content]
   deriving (Show, Eq)
 
