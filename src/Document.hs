@@ -17,7 +17,6 @@ data Config = Config
 
 data Content
   = List Text AttrList [Content]
-  | Quote Content
   | Unquote Text
   | String Text
   deriving (Show, Eq)

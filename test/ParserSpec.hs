@@ -37,13 +37,6 @@ parserSpec =
       parse macro "" "(macro ())" `shouldSatisfy` isLeft
       parse macro "" "(Macro {test})" `shouldSatisfy` isLeft
 
-    it "should parse quoted stuff" $ do
-      parse quote "" "#quote" `shouldParse` Quote (String "quote")
-      parse quote "" "#\"hello there\"" `shouldParse` Quote (String "hello there")
-      parse quote "" "#(nl)" `shouldParse` Quote (ebl "nl")
-      parse quote "" "#" `shouldSatisfy` isLeft
-      parse quote "" "#)" `shouldSatisfy` isLeft
-
     it "should parse unquoted stuff" $ do
       parse unquote "" "@param-name" `shouldParse` Unquote "param-name"
       parse unquote "" "@strange/name" `shouldParse` Unquote "strange/name"

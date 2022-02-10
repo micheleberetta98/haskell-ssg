@@ -36,8 +36,7 @@ config = parens "{" "}" $ runPermutation $
 
 content :: Parser Content
 content = choice
-  [ quote
-  , unquote
+  [ unquote
   , contentString
   , list
   ]
@@ -52,11 +51,6 @@ listWithHead h = recoverListWith (List "" (AttrList []) [])
     <$> identifier
     <*> option (AttrList []) attrList
     <*> many content
-
-quote :: Parser Content
-quote = lexeme $ Quote <$> (char '#' *> (freeString <|> content))
-  where
-    freeString = String . T.pack <$> some (noneOf specialChars)
 
 unquote :: Parser Content
 unquote = Unquote <$> (char '@' *> identifier)
@@ -110,4 +104,4 @@ sc :: Parser ()
 sc = L.space space1 empty empty
 
 specialChars :: [Char]
-specialChars = [' ', '(', ')', '[', ']', '\"', '@', '#', '\n']
+specialChars = [' ', '(', ')', '[', ']', '\"', '@', '\n']
