@@ -1,6 +1,8 @@
 module Macro
   ( expand
+  , expandAll
   , Macro(..)
+  , Params
   )
 where
 

@@ -14,6 +14,9 @@ type Params = [(Text, [Content])]
 
 ------------ Macro expansion
 
+expandAll :: [Macro] -> [Content] -> [Content]
+expandAll macros content = foldl' (flip expand) content macros
+
 expand :: Macro -> [Content] -> [Content]
 expand m@(Macro n body) = concatMap expand'
   where

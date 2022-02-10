@@ -31,3 +31,20 @@ macroSpec =
       expand m1 [doc2] `shouldBe` [doc2]
       expand m2 [doc2] `shouldBe` [lst "p" [String "content1", String "content2", lst "nl" [], String "hello"]]
 
+    it "should expand multiple macros" $ do
+      let m1 = Macro "m1" [lst "div" [], lst "p" [Unquote "content"]]
+          m2 = Macro "m2" [lst "p" [Unquote "content", lst "section" [Unquote "content"], String "hello"]]
+      let doc = [lst "m1" [lst "content" [String "macro 1 content"]], lst "m2" [lst "content" [String "macro 2 content"]]]
+      expandAll [m1, m2] doc `shouldBe`
+        [ lst "div" []
+        , lst "p" [String "macro 1 content"]
+        , lst "p"
+          [ String "macro 2 content"
+          , lst "section" [String "macro 2 content"]
+          , String "hello"
+          ]
+        ]
+      expandAll [m1, m2] doc `shouldBe` expandAll [m2, m1] doc
+      expandAll [m1, m1, m1] doc `shouldBe` expand m1 doc
+
+
