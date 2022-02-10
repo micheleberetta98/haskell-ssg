@@ -22,5 +22,7 @@ cabal.project.local~
 .HTF/
 .ghc.environment.*
 
+# Custom stuff for testing
 _build
 _layouts
+_src
