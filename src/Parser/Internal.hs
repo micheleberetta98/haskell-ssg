@@ -46,9 +46,10 @@ content = choice
 list :: Parser Content
 list = recoverListWith (List "" [])
   $ parens "(" ")"
-  $ List
-    <$> option "" identifier
-    <*> many content
+  $ identifier >>= chooseList
+  where
+    chooseList "alist" = AttrList <$> attrListContent
+    chooseList x       = List x <$> many content
 
 unquote :: Parser Content
 unquote = Unquote <$> (char '@' *> identifier)
@@ -57,6 +58,19 @@ contentString :: Parser Content
 contentString = String <$> stringedLiteral
 
 ------------ Utils
+
+attrListContent :: Parser [(Text, Text)]
+attrListContent = many (recover tuple)
+  where
+    tuple = parens "(" ")" $ choice
+      [ try $ (,) <$> identifier <*> stringedLiteral
+      , (,) <$> identifier <*> pure ""
+      ]
+    recover = withRecovery $ \e -> do
+      registerParseError e
+      some (anySingleBut ')')
+      symbol ")"
+      pure ("", "")
 
 recoverListWith :: a -> Parser a -> Parser a
 recoverListWith x = withRecovery $ \e -> do

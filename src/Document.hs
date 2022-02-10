@@ -17,6 +17,7 @@ data Config = Config
 
 data Content
   = List Text [Content]
+  | AttrList [(Text, Text)]
   | Unquote Text
   | String Text
   deriving (Show, Eq)
@@ -27,23 +28,22 @@ instance ToHTML a => ToHTML [a] where
   toHTML = T.concat . map toHTML
 
 instance ToHTML Content where
-  toHTML (String s)       = s
-  toHTML (List "alist" c) = toAttrList c
-  toHTML (List p c)       = tag p c
-  toHTML _                = ""
+  toHTML (String s)    = s
+  toHTML (List p c)    = tag p c
+  toHTML (AttrList xs) = toAttrList xs
+  toHTML _             = ""
 
-toAttrList :: [Content] -> Text
+toAttrList :: [(Text, Text)] -> Text
 toAttrList = T.concat . map toPair
   where
-    toPair (List k (String v:_)) = T.concat [k, "=\"", v, "\""]
-    toPair (List k [])           = k
-    toPair _                     = ""
+    toPair (k, "") = k
+    toPair (k, v)  = T.concat [k, "=\"", v, "\""]
 
 tag :: Text -> [Content] -> Text
-tag name (List "alist" xs : content) = T.concat
+tag name (AttrList xs : content) = T.concat
   [ "<", name, prependSpaceIfNotEmpty (toAttrList xs), ">"
   , toHTML content
   , "</", name, ">"
   ]
   where prependSpaceIfNotEmpty s = if T.null s then s else T.concat [" ", s]
-tag name content = tag name (List "alist" [] : content)
+tag name content = tag name (AttrList [] : content)
