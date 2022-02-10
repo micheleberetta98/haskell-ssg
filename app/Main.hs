@@ -16,9 +16,9 @@ main :: IO ()
 main = do
   putStrLn $ "Reading layouts at " ++ layoutsDir ++ ".. "
   layouts <- parseLayouts layoutsDir
-  putStrLn $ "\nReading src at " ++ layoutsDir ++ ".. "
+  putStrLn $ "Reading src at " ++ layoutsDir ++ ".. "
   srcFiles <- parseSrc srcDir
-  putStrLn $ "\nBuilding into " ++ buildDir ++ ".. "
+  putStrLn $ "Building into " ++ buildDir ++ ".. "
 
   let layouts' = rights layouts
   forM_ srcFiles $ \(path, eDoc) -> do

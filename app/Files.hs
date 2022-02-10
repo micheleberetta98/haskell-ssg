@@ -36,10 +36,10 @@ saveFile dir (path, Just stuff) =
 ------------ Parsing of layouts and src files
 
 parseLayouts :: FilePath -> IO [Either ParserError Macro]
-parseLayouts path = map snd <$> parsePath path macro
+parseLayouts path = map snd <$> parsePath path (macro <* eof)
 
 parseSrc :: FilePath -> IO [(FilePath, Either ParserError Document)]
-parseSrc path = parsePath path document
+parseSrc path = parsePath path (document <* eof)
 
 ------------ Utils
 
