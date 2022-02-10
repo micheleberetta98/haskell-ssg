@@ -23,7 +23,7 @@ main = do
   let layouts' = rights layouts
   forM_ srcFiles $ \(path, eDoc) -> do
     case eDoc of
-      Left err  -> print (errorBundlePretty err)
+      Left err  -> putStrLn (errorBundlePretty err)
       Right doc -> saveFile buildDir (build layouts' (path, doc))
 
   port <- getPort 4000
