@@ -5,4 +5,4 @@ repl:
 	cabal repl
 
 cli:
-	cabal repl app/Main.hs
+	cabal repl app/Main.hs --ghc-options="-Wwarn"
