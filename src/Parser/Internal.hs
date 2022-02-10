@@ -15,6 +15,8 @@ import qualified Text.Megaparsec.Char.Lexer       as L
 
 type Parser = Parsec Void Text
 
+type ParserError = ParseErrorBundle Text Void
+
 ------------ Main entities
 
 document :: Parser Document

@@ -14,6 +14,11 @@ type Params = [(Text, [Content])]
 
 ------------ Macro expansion
 
+applyLayout :: [Macro] -> Document -> Maybe [Content]
+applyLayout macros (Document config content) =
+  expand <$> find (hasName (configLayout config)) macros <*> pure content
+  where hasName x m = name m == x
+
 expandAll :: [Macro] -> [Content] -> [Content]
 expandAll macros content = foldl' (flip expand) content macros
 

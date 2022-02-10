@@ -1,5 +1,7 @@
 module Parser
-  ( document
+  ( Parser
+  , ParserError
+  , document
   , macro
   , parseFile
   )
@@ -13,6 +15,6 @@ import           Parser.Internal
 import           Text.Megaparsec (ParseErrorBundle)
 import qualified Text.Megaparsec as TM
 
-parseFile :: FilePath -> Parser a -> IO (Either (ParseErrorBundle Text Void) a)
+parseFile :: FilePath -> Parser a -> IO (Either ParserError a)
 parseFile file p = TM.parse p file <$> T.readFile file
 
