@@ -44,14 +44,10 @@ content = choice
   ]
 
 list :: Parser Content
-list = listWithHead identifier
-
-listWithHead :: Parser Text -> Parser Content
-listWithHead h = recoverListWith (List "" (AttrList []) [])
+list = recoverListWith (List "" [])
   $ parens "(" ")"
   $ List
-    <$> identifier
-    <*> option (AttrList []) attrList
+    <$> option "" identifier
     <*> many content
 
 unquote :: Parser Content
@@ -61,16 +57,6 @@ contentString :: Parser Content
 contentString = String <$> stringedLiteral
 
 ------------ Utils
-
-attrList :: Parser AttrList
-attrList = AttrList <$> recover (parens "[" "]" (many attrTuple))
-  where
-    attrTuple = (,) <$> identifier <*> stringedLiteral
-    recover = withRecovery $ \e -> do
-      registerParseError e
-      many (noneOf specialChars)
-      space1
-      pure []
 
 recoverListWith :: a -> Parser a -> Parser a
 recoverListWith x = withRecovery $ \e -> do

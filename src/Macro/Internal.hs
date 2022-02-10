@@ -21,9 +21,9 @@ applyLayout macros (Document config content) =
     layoutName = configLayout config
     hasName x m = name m == x
     content' =
-      [ List layoutName (AttrList [])
-        [ List "pageTitle" (AttrList []) [String (pageTitle config)]
-        , List "content" (AttrList []) content
+      [ List layoutName
+        [ List "pageTitle" [String (pageTitle config)]
+        , List "content" content
         ]
       ]
 
@@ -33,9 +33,9 @@ expandAll macros content = foldl' (flip expand) content macros
 expand :: Macro -> [Content] -> [Content]
 expand m@(Macro n body) = concatMap expand'
   where
-    expand' el@(List h attrs rest)
+    expand' el@(List h rest)
       | h == n    = expand m $ substitute (buildParams rest) body
-      | otherwise = [List h attrs (expand m rest)]
+      | otherwise = [List h (expand m rest)]
     expand' x     = [x]
 
 ------------ Substitution of @Unquote@s
@@ -44,14 +44,14 @@ substitute :: Params -> [Content] -> [Content]
 substitute params = concat . mapMaybe (substitute' params)
 
 substitute' :: Params -> Content -> Maybe [Content]
-substitute' params (Unquote x)         = lookup x params
-substitute' params (List h attrs rest) = Just [List h attrs (substitute params rest)]
-substitute' _ x                        = Just [x]
+substitute' params (Unquote x)   = lookup x params
+substitute' params (List h rest) = Just [List h (substitute params rest)]
+substitute' _ x                  = Just [x]
 
 ------------ Utils
 
 buildParams :: [Content] -> Params
 buildParams = mapMaybe toParam
   where
-    toParam (List h _ rest) = Just (h, rest)
-    toParam _               = Nothing
+    toParam (List h rest) = Just (h, rest)
+    toParam _             = Nothing

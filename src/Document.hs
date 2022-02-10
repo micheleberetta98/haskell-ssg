@@ -16,12 +16,9 @@ data Config = Config
   } deriving (Show, Eq)
 
 data Content
-  = List Text AttrList [Content]
+  = List Text [Content]
   | Unquote Text
   | String Text
-  deriving (Show, Eq)
-
-newtype AttrList = AttrList [(Text, Text)]
   deriving (Show, Eq)
 
 ------------ Class instances
@@ -30,21 +27,23 @@ instance ToHTML a => ToHTML [a] where
   toHTML = T.concat . map toHTML
 
 instance ToHTML Content where
-  toHTML (String s)   = s
-  toHTML (List p a c) = tag' p a (toHTML c)
-  toHTML _            = ""
+  toHTML (String s)       = s
+  toHTML (List "alist" c) = toAttrList c
+  toHTML (List p c)       = tag p c
+  toHTML _                = ""
 
-instance ToHTML AttrList where
-  toHTML (AttrList attrs) = T.concat (map toPair attrs)
-    where toPair (n, v) = T.concat [n, "=\"", v, "\""]
+toAttrList :: [Content] -> Text
+toAttrList = T.concat . map toPair
+  where
+    toPair (List k (String v:_)) = T.concat [k, "=\"", v, "\""]
+    toPair (List k [])           = k
+    toPair _                     = ""
 
-tag :: Text -> Text -> Text
-tag name = tag' name (AttrList [])
-
-tag' :: Text -> AttrList -> Text -> Text
-tag' name attrList content = T.concat
-  [ "<", name, prependSpaceIfNotEmpty (toHTML attrList), ">"
-  , content
+tag :: Text -> [Content] -> Text
+tag name (List "alist" xs : content) = T.concat
+  [ "<", name, prependSpaceIfNotEmpty (toAttrList xs), ">"
+  , toHTML content
   , "</", name, ">"
   ]
   where prependSpaceIfNotEmpty s = if T.null s then s else T.concat [" ", s]
+tag name content = tag name (List "alist" [] : content)
