@@ -16,8 +16,16 @@ type Params = [(Text, [Content])]
 
 applyLayout :: [Macro] -> Document -> Maybe [Content]
 applyLayout macros (Document config content) =
-  expand <$> find (hasName (configLayout config)) macros <*> pure content
-  where hasName x m = name m == x
+  expand <$> find (hasName layoutName) macros <*> pure content'
+  where
+    layoutName = configLayout config
+    hasName x m = name m == x
+    content' =
+      [ List layoutName (AttrList [])
+        [ List "pageTitle" (AttrList []) [String (pageTitle config)]
+        , List "content" (AttrList []) content
+        ]
+      ]
 
 expandAll :: [Macro] -> [Content] -> [Content]
 expandAll macros content = foldl' (flip expand) content macros

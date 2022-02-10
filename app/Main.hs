@@ -1,7 +1,11 @@
 module Main where
 
+import           Control.Monad
+import           Data.Either
 import           Files
+import           Server
 import           System.Environment
+import           Text.Megaparsec    (errorBundlePretty)
 
 layoutsDir, srcDir, buildDir :: FilePath
 layoutsDir = "_layouts"
@@ -12,12 +16,18 @@ main :: IO ()
 main = do
   putStrLn $ "Reading layouts at " ++ layoutsDir ++ ".. "
   layouts <- parseLayouts layoutsDir
-  print layouts
   putStrLn $ "\nReading src at " ++ layoutsDir ++ ".. "
   srcFiles <- parseSrc srcDir
-  print srcFiles
   putStrLn $ "\nBuilding into " ++ buildDir ++ ".. "
-  pure ()
+
+  let layouts' = rights layouts
+  forM_ srcFiles $ \(path, eDoc) -> do
+    case eDoc of
+      Left err  -> print (errorBundlePretty err)
+      Right doc -> saveFile buildDir (build layouts' (path, doc))
+
+  port <- getPort 4000
+  serve buildDir port
 
 
 getPort :: Int -> IO Int

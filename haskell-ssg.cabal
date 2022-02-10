@@ -55,6 +55,7 @@ executable haskell-ssg
                     , text
                     , directory
                     , filepath
+                    , megaparsec
     hs-source-dirs:   app
     default-language: Haskell2010
 

@@ -1,14 +1,36 @@
 module Files
   ( parseLayouts
   , parseSrc
+  , build
+  , saveFile
   )
 where
 
+import qualified Data.Text.IO     as TIO
 import           Document
 import           Macro
 import           Parser
 import           System.Directory
 import           System.FilePath
+import           ToHTML
+
+------------ "Building" files
+
+build :: [Macro] -> (FilePath, Document) -> (FilePath, Maybe [Content])
+build layouts = fmap (applyLayout layouts)
+
+saveFile :: FilePath -> (FilePath, Maybe [Content]) -> IO ()
+saveFile _ (path, Nothing) = putStrLn ("(!) Something's wrong at " ++ path ++ ": maybe the layout doesn't exist?") >> pure ()
+saveFile dir (path, Just stuff) =
+  let path' = deriveNewPath path
+  in do
+    createDirectoryIfMissing True (takeDirectory path')
+    TIO.writeFile path' (toHTML stuff)
+  where
+    deriveNewPath = joinPath . swapRootDir . splitDirectories . flip replaceExtension "html"
+    swapRootDir []           = []
+    swapRootDir ("." : rest) = "." : swapRootDir rest
+    swapRootDir (_ : rest)   = dir : rest
 
 ------------ Parsing of layouts and src files
 

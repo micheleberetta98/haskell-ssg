@@ -1,6 +1,7 @@
 module Macro
   ( expand
   , expandAll
+  , applyLayout
   , Macro(..)
   , Params
   )
