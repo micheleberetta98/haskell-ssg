@@ -11,9 +11,6 @@ import           Text.Megaparsec
 parserSpec :: SpecWith ()
 parserSpec =
   describe "Parser" $ do
-    let ebl n = List n []
-        bl n = List n
-
     it "should parse string literals" $ do
       parse stringedLiteral "" "\"This is a string\""   `shouldParse` "This is a string"
       parse stringedLiteral "" "\"This is a (string)\"" `shouldParse` "This is a (string)"
@@ -34,8 +31,12 @@ parserSpec =
       parse macro "" "(macro hi)" `shouldParse` Macro "hi" []
       parse macro "" "(macro how-are-you @title @content)" `shouldParse` Macro "how-are-you" [Unquote "title", Unquote "content"]
       parse macro "" "(Macro hi)" `shouldSatisfy` isLeft
+      parse macro "" "(macro)" `shouldSatisfy` isLeft
       parse macro "" "(macro ())" `shouldSatisfy` isLeft
       parse macro "" "(Macro {test})" `shouldSatisfy` isLeft
+
+    it "empty macros are a thing" $ do
+      parse macro "" "(macro #)" `shouldParse` Macro "#" []
 
     it "should parse unquoted stuff" $ do
       parse unquote "" "@param-name" `shouldParse` Unquote "param-name"
@@ -43,17 +44,15 @@ parserSpec =
       parse unquote "" "" `shouldSatisfy` isLeft
       parse unquote "" "not@valid" `shouldSatisfy` isLeft
 
-    it "should parse simple lists" $ do
-      parse list "" "(nl)" `shouldParse` ebl "nl"
-      parse list "" "(b \"string content\")" `shouldParse` bl "b" [String "string content"]
-      parse list "" "(a (b (c @d)))" `shouldParse` bl "a" [bl "b" [bl "c" [Unquote "d"]]]
-      parse list "" "(b\n    \"string content\"\n    (i \"nested\"))" `shouldParse` bl "b" [String "string content", bl "i" [String "nested"]]
+    it "should parse lists and attribute lists" $ do
+      parse list "" "(nl)" `shouldParse` List "nl" []
+      parse list "" "(b \"string content\")" `shouldParse` List "b" [String "string content"]
+      parse list "" "(a (b (c @d)))" `shouldParse` List "a" [List "b" [List "c" [Unquote "d"]]]
+      parse list "" "(b\n    \"string content\"\n    (i \"nested\"))" `shouldParse` List "b" [String "string content", List "i" [String "nested"]]
+      parse list "" "(par (alist (class \"red\")) (nl))" `shouldParse` List "par" [AttrList [("class", "red")], List "nl" []]
       parse list "" "()" `shouldSatisfy` isLeft
       parse list "" "[nl]" `shouldSatisfy` isLeft
       parse list "" "(nl [class red])" `shouldSatisfy` isLeft
-
-    it "should parse attributes list" $ do
-      parse list "" "(par (alist (class \"red\")) (nl))" `shouldParse` List "par" [AttrList [("class", "red")], ebl "nl"]
       parse list "" "(alist (class \"red\") (required))" `shouldParse` AttrList [("class", "red"), ("required", "")]
       parse list "" "(alist)" `shouldParse` AttrList []
       parse list "" "(alist ())" `shouldSatisfy` isLeft
