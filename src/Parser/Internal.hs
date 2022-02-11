@@ -23,8 +23,7 @@ document :: Parser Document
 document = Document <$> config <*> many content
 
 macro :: Parser Macro
-macro = recoverListWith (Macro "" [])
-  $ parens "(" ")"
+macro = parens "(" ")"
   $ symbol "macro" *> (Macro <$> identifier <*> many content)
 
 config :: Parser Config
@@ -37,15 +36,19 @@ config = parens "{" "}" $ runPermutation $
     key s = symbol s *> stringedLiteral
 
 content :: Parser Content
-content = choice
+content = recover $ choice
   [ unquote
   , contentString
   , list
   ]
+  where
+    recover = withRecovery $ \e -> do
+      registerParseError e
+      lexeme $ some (noneOf specialChars)
+      pure (String "")
 
 list :: Parser Content
-list = recoverListWith (List "" [])
-  $ parens "(" ")"
+list = parens "(" ")"
   $ identifier >>= chooseList
   where
     chooseList "alist" = AttrList <$> attrListContent
@@ -62,21 +65,12 @@ contentString = String <$> stringedLiteral
 attrListContent :: Parser [(Text, Text)]
 attrListContent = many (recover tuple)
   where
-    tuple = parens "(" ")" $ choice
-      [ try $ (,) <$> identifier <*> stringedLiteral
-      , (,) <$> identifier <*> pure ""
-      ]
+    tuple = parens "(" ")" $ (,) <$> identifier <*> option "" stringedLiteral
     recover = withRecovery $ \e -> do
       registerParseError e
       some (anySingleBut ')')
       symbol ")"
       pure ("", "")
-
-recoverListWith :: a -> Parser a -> Parser a
-recoverListWith x = withRecovery $ \e -> do
-      registerParseError e
-      some (anySingleBut ')')
-      pure x
 
 stringedLiteral :: Parser Text
 stringedLiteral = between (char '"') (symbol "\"") $
