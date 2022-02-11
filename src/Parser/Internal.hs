@@ -88,10 +88,7 @@ stringedLiteral = between (char '"') (symbol "\"") $
     )
 
 identifier :: Parser Text
-identifier = lexeme $ do
-  c <- satisfy isAlpha
-  cs <- many (noneOf specialChars)
-  pure $ T.pack (c : cs)
+identifier = lexeme $ T.pack <$> some (noneOf specialChars)
 
 parens :: Text -> Text -> Parser a -> Parser a
 parens open close = between (symbol open) (symbol close)
