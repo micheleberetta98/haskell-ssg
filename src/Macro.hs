@@ -3,7 +3,6 @@ module Macro
   , expandAll
   , applyLayout
   , Macro(..)
-  , Params
   )
 where
 

@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Macro.Internal where
 
 import           Data.List
@@ -7,13 +9,22 @@ import           Document
 
 ------------ Custom types
 
+-- | A 'Macro' is defined by a name and some @body@
+-- which is the stuff that will be substitued every time
+-- the @name@ is encountered. Eventual 'Unquote' will be expanded
+-- with the parameters. For example, @(macro foo (content bar))@ is
+-- a macro named /foo/ that has a parameter /content/.
 data Macro = Macro { name :: Text , body :: [Content] }
   deriving (Show, Eq)
 
-type Params = [(Text, [Content])]
+-- | A little utility type to represent macro params
+type MacroParams = [(Text, [Content])]
 
 ------------ Macro expansion
 
+-- | Applies the first 'Macro' in @macros@ that has the same
+-- name as the layout in the 'Document', with the default parameters
+-- of /pageTitle/ and /content/.
 applyLayout :: [Macro] -> Document -> Maybe [Content]
 applyLayout macros (Document config content) =
   expand <$> find (hasName layoutName) macros <*> pure content'
@@ -27,9 +38,11 @@ applyLayout macros (Document config content) =
         ]
       ]
 
+-- | Expands all macros in a list over a list of 'Content'.
 expandAll :: [Macro] -> [Content] -> [Content]
 expandAll macros content = foldl' (flip expand) content macros
 
+-- | Expands a single macro over a list of 'Content'
 expand :: Macro -> [Content] -> [Content]
 expand m@(Macro n body) = concatMap expand'
   where
@@ -38,20 +51,21 @@ expand m@(Macro n body) = concatMap expand'
       | otherwise = [List h (expand m rest)]
     expand' x     = [x]
 
------------- Substitution of @Unquote@s
+------------ Substitution
 
-substitute :: Params -> [Content] -> [Content]
+-- | Substitute all 'Unquote' with the corresponding parameter
+substitute :: MacroParams -> [Content] -> [Content]
 substitute params = concat . mapMaybe (substitute' params)
-
-substitute' :: Params -> Content -> Maybe [Content]
-substitute' params (Unquote x)   = lookup x params
-substitute' params (List h rest) = Just [List h (substitute params rest)]
-substitute' _ x                  = Just [x]
+  where
+    substitute' params (Unquote x)   = lookup x params
+    substitute' params (List h rest) = Just [List h (substitute params rest)]
+    substitute' _ x                  = Just [x]
 
 ------------ Utils
 
-buildParams :: [Content] -> Params
-buildParams = mapMaybe toParam
-  where
-    toParam (List h rest) = Just (h, rest)
-    toParam _             = Nothing
+-- | Builds the 'MacroParams' data structure from the body
+-- of a macro
+buildParams :: [Content] -> MacroParams
+buildParams = mapMaybe $ \case
+    (List h rest) -> Just (h, rest)
+    _             -> Nothing

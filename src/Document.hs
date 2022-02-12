@@ -6,15 +6,23 @@ import           ToHTML
 
 ------------ Custom types
 
+-- | A @Document@ represents the entire document in the language,
+-- comprised of a @Config@ and a list of @Content@
 data Document = Document Config [Content]
   deriving (Show, Eq)
 
+-- | The @Config@ of a @Document@ contains some metadata
+-- about the document, like for example the page title or
+-- the layout.
 data Config = Config
   { pageTitle       :: Text
   , configCustomCss :: Maybe Text
   , configLayout    :: Text
   } deriving (Show, Eq)
 
+-- | A @Content@ is essentialy a list or a single element (@Unquote@ or @String@).
+-- A list can be "general" or an @AttrList@, which has the form of
+-- @(attrlist (param1 "value1") (param2 "value2") (paramWithNoValue))@
 data Content
   = List Text [Content]
   | AttrList [(Text, Text)]
@@ -23,9 +31,6 @@ data Content
   deriving (Show, Eq)
 
 ------------ Class instances
-
-instance ToHTML a => ToHTML [a] where
-  toHTML = T.concat . map toHTML
 
 instance ToHTML Content where
   toHTML (String s)    = s

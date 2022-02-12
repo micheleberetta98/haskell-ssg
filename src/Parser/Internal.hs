@@ -19,13 +19,18 @@ type ParserError = ParseErrorBundle Text Void
 
 ------------ Main entities
 
+-- | Parses a 'Document', comprised of one 'Config' and zero or more 'content'.
 document :: Parser Document
 document = Document <$> config <*> many content
 
+-- | Parses a 'Macro' in the form @(macro <id> <body>)@,
+-- where id is an 'identifier' and body is zero or more 'content'.
 macro :: Parser Macro
 macro = parens "(" ")"
   $ symbol "macro" *> (Macro <$> identifier <*> many content)
 
+-- | Parses a document 'Config' in the form @{ key \"value\" }@.
+-- All key-value pairs are permutative and can appear in any order.
 config :: Parser Config
 config = parens "{" "}" $ runPermutation $
   Config
@@ -35,6 +40,9 @@ config = parens "{" "}" $ runPermutation $
   where
     key s = symbol s *> stringedLiteral
 
+-- | Parses a single 'Content', which can be a 'list', an 'unquote' or a 'contentString'.
+-- This is a recoverable parser, and in case of an error it will consume all inputs
+-- until one of 'specialChars' is encountered.
 content :: Parser Content
 content = recover $ choice
   [ unquote
@@ -47,6 +55,7 @@ content = recover $ choice
       lexeme $ some (noneOf specialChars)
       pure (String "")
 
+-- | Parses a single 'List' or 'AttrList'.
 list :: Parser Content
 list = parens "(" ")"
   $ identifier >>= chooseList
@@ -54,14 +63,20 @@ list = parens "(" ")"
     chooseList "alist" = AttrList <$> attrListContent
     chooseList x       = List x <$> many content
 
+-- | Parses an 'Unquote', composed of @\@@ followed by an 'identifier'.
 unquote :: Parser Content
 unquote = Unquote <$> (char '@' *> identifier)
 
+-- | Parses a 'String' in the form of @\"anything goes\"@.
+-- Newlines are permitted.
 contentString :: Parser Content
 contentString = String <$> stringedLiteral
 
 ------------ Utils
 
+-- | An 'AttrList' content in the form of @((param \"value") ...)@.
+-- This is a recoverable parser, and in case of an error it will consume all inputs
+-- until a single @)@ is encountered.
 attrListContent :: Parser [(Text, Text)]
 attrListContent = many (recover tuple)
   where
@@ -72,6 +87,8 @@ attrListContent = many (recover tuple)
       symbol ")"
       pure ("", "")
 
+-- | A 'stringedLiteral' is some 'Text' between two @\"@ characters.
+-- It can be empty.
 stringedLiteral :: Parser Text
 stringedLiteral = between (char '"') (symbol "\"") $
   T.pack <$> many
@@ -81,6 +98,7 @@ stringedLiteral = between (char '"') (symbol "\"") $
       ]
     )
 
+-- | An 'identifier' is some 'Text' with no 'specialChars' and cannot be empty.
 identifier :: Parser Text
 identifier = lexeme $ T.pack <$> some (noneOf specialChars)
 
@@ -93,8 +111,10 @@ lexeme = L.lexeme sc
 symbol :: Text -> Parser Text
 symbol = L.symbol sc
 
+-- | A space consumer
 sc :: Parser ()
 sc = L.space space1 empty empty
 
+-- | Special chars, not permitted in identifiers.
 specialChars :: [Char]
 specialChars = [' ', '(', ')', '[', ']', '\"', '@', '\n']
