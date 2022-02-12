@@ -56,7 +56,5 @@ parseDir dir p = do
 
 parseFile :: FilePath -> Parser a -> IO [(FilePath, Either ParserError a)]
 parseFile path p = do
-  result <- parseFile'
+  result <- parse p path <$> TIO.readFile path
   pure [(path, result)]
-  where
-    parseFile' = parse p path <$> TIO.readFile path
