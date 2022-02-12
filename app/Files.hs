@@ -3,6 +3,7 @@ module Files
   , parseSrc
   , build
   , saveFile
+  , copyAssets
   )
 where
 
@@ -22,16 +23,20 @@ build layouts = fmap (applyLayout layouts)
 
 saveFile :: FilePath -> (FilePath, Maybe [Content]) -> IO ()
 saveFile _ (path, Nothing) = putStrLn ("(!) Something's wrong at " ++ path ++ ": maybe the layout doesn't exist?") >> pure ()
-saveFile dir (path, Just stuff) =
-  let path' = deriveNewPath path
-  in do
-    createDirectoryIfMissing True (takeDirectory path')
-    TIO.writeFile path' (toHTML stuff)
+saveFile dir (path, Just stuff) = do
+  createDirectoryIfMissing True (takeDirectory path')
+  TIO.writeFile path' (toHTML stuff)
   where
+    path' = deriveNewPath path
     deriveNewPath = joinPath . swapRootDir . splitDirectories . flip replaceExtension "html"
     swapRootDir []           = []
     swapRootDir ("." : rest) = "." : swapRootDir rest
     swapRootDir (_ : rest)   = dir : rest
+
+copyAssets :: FilePath -> FilePath -> IO ()
+copyAssets from to = do
+  createDirectoryIfMissing True to
+  copyDir from to
 
 ------------ Parsing of layouts and src files
 
@@ -58,3 +63,16 @@ parseFile :: FilePath -> Parser a -> IO [(FilePath, Either ParserError a)]
 parseFile path p = do
   result <- parse p path <$> TIO.readFile path
   pure [(path, result)]
+
+copyDir :: FilePath -> FilePath -> IO ()
+copyDir path to = do
+  isFile <- doesFileExist path
+  if isFile
+    then copyFile path (to </> takeFileName path)
+    else do
+      createDirectoryIfMissing True (to </> path')
+      paths <- listDirectory path
+      mapM_ (\p -> copyDir (path </> p) (to </> path')) paths
+  where
+    path' = dropRootDir path
+    dropRootDir = joinPath . drop 1 . splitDirectories

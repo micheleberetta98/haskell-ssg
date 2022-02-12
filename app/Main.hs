@@ -7,10 +7,12 @@ import           Server
 import           System.Environment
 import           Text.Megaparsec    (errorBundlePretty)
 
-layoutsDir, srcDir, buildDir :: FilePath
+layoutsDir, srcDir, buildDir, assetsDir, outputAssetsDir :: FilePath
 layoutsDir = "_layouts"
 srcDir     = "_src"
 buildDir   = "_build"
+assetsDir  = "_static"
+outputAssetsDir = "_build/static"
 
 main :: IO ()
 main = do
@@ -25,6 +27,9 @@ main = do
     case eDoc of
       Left err  -> putStrLn (errorBundlePretty err)
       Right doc -> saveFile buildDir (build layouts' (path, doc))
+
+  putStrLn "Copying assets dir..."
+  copyAssets assetsDir outputAssetsDir
 
   port <- getPort 4000
   serve buildDir port
