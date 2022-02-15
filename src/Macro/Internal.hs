@@ -1,4 +1,5 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase    #-}
+{-# LANGUAGE TupleSections #-}
 
 module Macro.Internal where
 
@@ -28,11 +29,12 @@ type MacroParams = [(Text, [Content])]
 applyLayout :: [Macro] -> Document -> Maybe [Content]
 applyLayout macros (Document config content) =
   expand <$> find (hasName layoutName) macros <*> pure
-    [ List layoutName []
-      [ List "pageTitle" [] [String (pageTitle config)]
-      , List "content" [] content
+      [ List layoutName []
+        [ List "pageTitle" [] [String (pageTitle config)]
+        , List "customCss" [] [String (fromMaybe "" (configCustomCss config))]
+        , List "content" [] content
+        ]
       ]
-    ]
   where
     layoutName = configLayout config
     hasName x m = name m == x
@@ -46,19 +48,27 @@ expand :: Macro -> [Content] -> [Content]
 expand m@(Macro n body) = concatMap expand'
   where
     expand' el@(List h attrs rest)
-      | h == n    = expand m $ substitute (buildParams rest) body
-      | otherwise = [List h attrs (expand m rest)]
+      | h == n    = expand m (substitute params body)
+      | otherwise = [List h (substituteAttrs params attrs) (expand m rest)]
+      where params = buildParams rest
     expand' x     = [x]
 
 ------------ Substitution
 
--- | Substitute all 'Unquote' with the corresponding parameter
+-- | Substitute all 'Unquote' with the corresponding parameter in a list of 'Content'
 substitute :: MacroParams -> [Content] -> [Content]
-substitute params = concat . mapMaybe (substitute' params)
+substitute params = concat . mapMaybe substitute'
   where
-    substitute' params (Unquote x)         = lookup x params
-    substitute' params (List h attrs rest) = Just [List h attrs (substitute params rest)]
-    substitute' _ x                        = Just [x]
+    substitute' (Unquote x)         = lookup x params
+    substitute' (List h attrs rest) = Just [List h (substituteAttrs params attrs) (substitute params rest)]
+    substitute' x                   = Just [x]
+
+-- | Substitute all 'Unquote' with the corresponding parameter in an 'AttrList'
+substituteAttrs :: MacroParams -> AttrList -> AttrList
+substituteAttrs params = mapMaybe substituteAttrs'
+  where
+    substituteAttrs' (k, Unquote x) = (k,) <$> (lookup x params >>= listToMaybe)
+    substituteAttrs' (k, x)         = Just (k, x)
 
 ------------ Utils
 

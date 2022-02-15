@@ -20,7 +20,7 @@ macroSpec =
       substitute params [l "p" [Unquote "param1", Unquote "__"]] `shouldBe` [l "p" [String "hello"]]
       substitute params [l "p" [l "div" [], List "div" [] [Unquote "param2"]]] `shouldBe` [l "p" [l "div" [], l "div" [String "goodbye"]]]
 
-    it "should expand" $ do
+    it "should expand in documents' content" $ do
       let m1 = Macro "m1" [l "div" [], l "p" [Unquote "content"]]
           m2 = Macro "m2" [l "p" [Unquote "content", l "nl" [], String "hello"]]
       let doc1 = l "m1" [l "content" [String "content1", String "content2"]]
@@ -29,6 +29,14 @@ macroSpec =
       expand m2 [doc1] `shouldBe` [doc1]
       expand m1 [doc2] `shouldBe` [doc2]
       expand m2 [doc2] `shouldBe` [l "p" [String "content1", String "content2", l "nl" [], String "hello"]]
+
+    it "should expand in a list's attrlist" $ do
+      let m = Macro "*macro*" [List "div" [("class", Unquote "class")] [Unquote "content"]]
+      let doc = l "*macro*"
+            [ l "content" [String "content1", String "content2"]
+            , l "class" [String "red"]
+            ]
+      expand m [doc] `shouldBe` [List "div" [("class", String "red")] [String "content1", String "content2"]]
 
     it "should expand multiple macros" $ do
       let m1 = Macro "m1" [l "div" [], l "p" [Unquote "content"]]

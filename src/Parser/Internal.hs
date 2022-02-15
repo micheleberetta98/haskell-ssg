@@ -75,14 +75,15 @@ contentString = String <$> stringedLiteral
 -- This is a recoverable parser, and in case of an error it will consume all inputs
 -- until a single @)@ is encountered.
 attrList :: Parser AttrList
-attrList = parens "[" "]" $ many (recover tuple)
+attrList = parens "[" "]" $ many $ recover
+  $ parens "(" ")"
+  $ (,) <$> identifier <*> option (String "") (contentString <|> unquote)
   where
-    tuple = parens "(" ")" $ (,) <$> identifier <*> option "" stringedLiteral
     recover = withRecovery $ \e -> do
       registerParseError e
       some (noneOf specialChars)
       oneOf specialChars
-      pure ("", "")
+      pure ("", String "")
 
 -- | A 'stringedLiteral' is some 'Text' between two @\"@ characters.
 -- It can be empty.

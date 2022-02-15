@@ -36,7 +36,7 @@ data Content
   | String Text
   deriving (Show, Eq)
 
-type AttrList = [(Text, Text)]
+type AttrList = [(Text, Content)]
 
 ------------ Html conversion
 
@@ -75,8 +75,9 @@ tag t as = foldl' (H.!) t (mapMaybe toAttr as)
 tag' :: Html -> HtmlMapping
 tag' t as _ = foldl' (H.!) t (mapMaybe toAttr as)
 
-toAttr :: (Text, Text) -> Maybe Attribute
-toAttr (k, v) = M.lookup k attrs <*> pure (fromString (T.unpack v))
+toAttr :: (Text, Content) -> Maybe Attribute
+toAttr (k, String v) = M.lookup k attrs <*> pure (fromString (T.unpack v))
+toAttr _             = Nothing
 
 attrs :: Map Text (AttributeValue -> Attribute)
 attrs = M.fromList

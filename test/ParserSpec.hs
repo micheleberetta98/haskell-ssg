@@ -49,14 +49,16 @@ parserSpec =
       parse list "" "(b \"string content\")" `shouldParse` List "b" [] [String "string content"]
       parse list "" "(a (b (c @d)))" `shouldParse` List "a" [] [List "b" [] [List "c" [] [Unquote "d"]]]
       parse list "" "(b\n    \"string content\"\n    (i \"nested\"))" `shouldParse` List "b" [] [String "string content", List "i" [] [String "nested"]]
-      parse list "" "(par [(class \"red\")] (nl))" `shouldParse` List "par" [("class", "red")] [List "nl" [] []]
+      parse list "" "(par [(class \"red\")] (nl))" `shouldParse` List "par" [("class", String "red")] [List "nl" [] []]
       parse list "" "()" `shouldSatisfy` isLeft
       parse list "" "[nl]" `shouldSatisfy` isLeft
       parse list "" "(nl [class red])" `shouldSatisfy` isLeft
 
     it "should parse attribute lists" $ do
-      parse attrList "" "[(class \"red\") (required)]" `shouldParse` [("class", "red"), ("required", "")]
+      parse attrList "" "[(class \"red\") (required)]" `shouldParse` [("class", String "red"), ("required", String "")]
+      parse attrList "" "[(class \"red\") (href @linkValue)]" `shouldParse` [("class", String "red"), ("href", Unquote "linkValue")]
       parse attrList "" "[]" `shouldParse` []
+      parse attrList "" "[(class (nl))]" `shouldSatisfy` isLeft
       parse attrList "" "[()]" `shouldSatisfy` isLeft
       parse attrList "" "[(class ?a)]" `shouldSatisfy` isLeft
 
