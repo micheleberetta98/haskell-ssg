@@ -1,10 +1,9 @@
 module ToHTML where
 
-import           Data.Text (Text)
-import qualified Data.Text as T
+import           Text.Blaze.Html5 (Html)
 
-class ToHTML a where
-  toHTML :: a -> Text
+class ToHtml a where
+  toHtml :: a -> Html
 
-instance ToHTML a => ToHTML [a] where
-  toHTML = T.concat . map toHTML
+-- instance ToHTML a => ToHTML [a] where
+--   toHTML = T.concat . map toHTML

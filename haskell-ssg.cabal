@@ -24,11 +24,12 @@ author:             Beretta Michele
 
 library
     exposed-modules:  Document
+                    , Document.Internal
                     , Macro
                     , Macro.Internal
                     , Parser
                     , Parser.Internal
-                    , ToHTML
+                    , ToHtml
     build-depends:    base ^>=4.14.3.0
                     , containers
                     , megaparsec
