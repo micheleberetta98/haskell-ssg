@@ -55,13 +55,10 @@ content = recover $ choice
       lexeme $ some (noneOf specialChars)
       pure (String "")
 
--- | Parses a single 'List' or 'AttrList'.
+-- | Parses a single 'List'.
 list :: Parser Content
-list = parens "(" ")"
-  $ identifier >>= chooseList
-  where
-    chooseList "alist" = AttrList <$> attrListContent
-    chooseList x       = List x <$> many content
+list = parens "(" ")" $
+  List <$> identifier <*> option [] attrList <*> many content
 
 -- | Parses an 'Unquote', composed of @\@@ followed by an 'identifier'.
 unquote :: Parser Content
@@ -74,11 +71,11 @@ contentString = String <$> stringedLiteral
 
 ------------ Utils
 
--- | An 'AttrList' content in the form of @((param \"value") ...)@.
+-- | An 'AttrList' is in the form of @((param \"value") ...)@.
 -- This is a recoverable parser, and in case of an error it will consume all inputs
 -- until a single @)@ is encountered.
-attrListContent :: Parser [(Text, Text)]
-attrListContent = many (recover tuple)
+attrList :: Parser AttrList
+attrList = parens "(" ")" $ many (recover tuple)
   where
     tuple = parens "(" ")" $ (,) <$> identifier <*> option "" stringedLiteral
     recover = withRecovery $ \e -> do
