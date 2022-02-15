@@ -27,16 +27,15 @@ type MacroParams = [(Text, [Content])]
 -- of /pageTitle/ and /content/.
 applyLayout :: [Macro] -> Document -> Maybe [Content]
 applyLayout macros (Document config content) =
-  expand <$> find (hasName layoutName) macros <*> pure content'
+  expand <$> find (hasName layoutName) macros <*> pure
+    [ List layoutName []
+      [ List "pageTitle" [] [String (pageTitle config)]
+      , List "content" [] content
+      ]
+    ]
   where
     layoutName = configLayout config
     hasName x m = name m == x
-    content' =
-      [ List layoutName []
-        [ List "pageTitle" [] [String (pageTitle config)]
-        , List "content" [] content
-        ]
-      ]
 
 -- | Expands all macros in a list over a list of 'Content'.
 expandAll :: [Macro] -> [Content] -> [Content]
@@ -57,9 +56,9 @@ expand m@(Macro n body) = concatMap expand'
 substitute :: MacroParams -> [Content] -> [Content]
 substitute params = concat . mapMaybe (substitute' params)
   where
-    substitute' params (Unquote x)   = lookup x params
+    substitute' params (Unquote x)         = lookup x params
     substitute' params (List h attrs rest) = Just [List h attrs (substitute params rest)]
-    substitute' _ x                  = Just [x]
+    substitute' _ x                        = Just [x]
 
 ------------ Utils
 
