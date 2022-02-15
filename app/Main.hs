@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Main where
 
 import           Control.Monad
@@ -21,6 +22,10 @@ main = do
   putStrLn $ "Reading src at " ++ layoutsDir ++ ".. "
   srcFiles <- parseSrc srcDir
   putStrLn $ "Building into " ++ buildDir ++ ".. "
+
+  forM_ layouts $ \case
+      Left e  -> putStrLn (errorBundlePretty e)
+      Right _ -> pure ()
 
   let layouts' = rights layouts
   forM_ srcFiles $ \(path, eDoc) -> do

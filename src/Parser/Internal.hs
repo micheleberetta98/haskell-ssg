@@ -5,7 +5,7 @@ import           Data.Char
 import           Data.Text                        (Text)
 import qualified Data.Text                        as T
 import           Data.Void                        (Void)
-import           Document
+import           Document.Internal
 import           Macro
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
