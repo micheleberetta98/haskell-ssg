@@ -71,17 +71,17 @@ contentString = String <$> stringedLiteral
 
 ------------ Utils
 
--- | An 'AttrList' is in the form of @((param \"value") ...)@.
+-- | An 'AttrList' is in the form of @[(param \"value") ...]@.
 -- This is a recoverable parser, and in case of an error it will consume all inputs
 -- until a single @)@ is encountered.
 attrList :: Parser AttrList
-attrList = parens "(" ")" $ many (recover tuple)
+attrList = parens "[" "]" $ many (recover tuple)
   where
     tuple = parens "(" ")" $ (,) <$> identifier <*> option "" stringedLiteral
     recover = withRecovery $ \e -> do
       registerParseError e
-      some (anySingleBut ')')
-      symbol ")"
+      some (noneOf specialChars)
+      oneOf specialChars
       pure ("", "")
 
 -- | A 'stringedLiteral' is some 'Text' between two @\"@ characters.

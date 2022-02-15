@@ -14,7 +14,7 @@ import           Parser
 import           System.Directory
 import           System.FilePath
 import           Text.Megaparsec
-import           ToHTML
+import           ToHtml
 
 ------------ "Building" files
 
@@ -25,7 +25,7 @@ saveFile :: FilePath -> (FilePath, Maybe [Content]) -> IO ()
 saveFile _ (path, Nothing) = putStrLn ("(!) Something's wrong at " ++ path ++ ": maybe the layout doesn't exist?") >> pure ()
 saveFile dir (path, Just stuff) = do
   createDirectoryIfMissing True (takeDirectory path')
-  TIO.writeFile path' (toHTML stuff)
+  TIO.writeFile path' (foldMap toHtml stuff)
   where
     path' = deriveNewPath path
     deriveNewPath = joinPath . swapRootDir . splitDirectories . flip replaceExtension "html"

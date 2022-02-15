@@ -4,8 +4,8 @@ module Macro.Internal where
 
 import           Data.List
 import           Data.Maybe
-import           Data.Text  (Text)
-import           Document
+import           Data.Text         (Text)
+import           Document.Internal
 
 ------------ Custom types
 

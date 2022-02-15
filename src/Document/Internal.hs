@@ -33,9 +33,9 @@ type AttrList = [(Text, Text)]
 ------------ Class instances
 
 instance ToHtml Content where
-  toHTML (String s)    = s
-  toHTML (List p xs c) = tag p xs c
-  toHTML _             = ""
+  toHtml (String s)    = s
+  toHtml (List p xs c) = tag p xs c
+  toHtml _             = ""
 
 toAttrList :: [(Text, Text)] -> Text
 toAttrList = T.concat . map toPair
@@ -46,7 +46,7 @@ toAttrList = T.concat . map toPair
 tag :: Text -> AttrList -> [Content] -> Text
 tag name xs content = T.concat
   [ "<", name, prependSpaceIfNotEmpty (toAttrList xs), ">"
-  , foldMap toHTML content
+  , foldMap toHtml content
   , "</", name, ">"
   ]
   where prependSpaceIfNotEmpty s = if T.null s then s else T.concat [" ", s]
