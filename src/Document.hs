@@ -1,17 +1,19 @@
 module Document where
 
-import           Data.Text (Text)
-import qualified Data.Text as T
+import           Data.Bifunctor (Bifunctor (first))
+import           Data.List
+import           Data.Text      (Text)
+import qualified Data.Text      as T
 import           ToHTML
 
 ------------ Custom types
 
--- | A @Document@ represents the entire document in the language,
--- comprised of a @Config@ and a list of @Content@
+-- | A 'Document' represents the entire document in the language,
+-- comprised of a 'Config' and a list of 'Content
 data Document = Document Config [Content]
   deriving (Show, Eq)
 
--- | The @Config@ of a @Document@ contains some metadata
+-- | The 'Config' of a 'Document' contains some metadata
 -- about the document, like for example the page title or
 -- the layout.
 data Config = Config
@@ -20,8 +22,8 @@ data Config = Config
   , configLayout    :: Text
   } deriving (Show, Eq)
 
--- | A @Content@ is essentialy a list or a single element (@Unquote@ or @String@).
--- A list can be "general" or an @AttrList@, which has the form of
+-- | A 'Content' is essentialy a list or a single element ('Unquote' or 'String').
+-- A list can be "general" or an 'AttrList', which has the form of
 -- @(attrlist (param1 "value1") (param2 "value2") (paramWithNoValue))@
 data Content
   = List Text [Content]
@@ -29,6 +31,17 @@ data Content
   | Unquote Text
   | String Text
   deriving (Show, Eq)
+
+------------ Functions
+
+-- | Merges multiple 'AttrList' into one at the begininng of the list of 'Content'.
+mergeAttrLists :: [Content] -> [Content]
+mergeAttrLists = tcons . first AttrList . foldl' merge ([], [])
+  where
+    merge (attrs, xs) (AttrList as) = (attrs ++ as, xs)
+    merge (attrs, xs) x             = (attrs, xs ++ [x])
+
+    tcons (x, xs) = x : xs
 
 ------------ Class instances
 
