@@ -5,8 +5,7 @@ import           Control.Monad
 import           Data.Either
 import           Files
 import           Server
-import           System.Environment
-import           Text.Megaparsec    (errorBundlePretty)
+import           Text.Megaparsec (errorBundlePretty)
 
 layoutsDir, srcDir, buildDir, assetsDir, outputAssetsDir :: FilePath
 layoutsDir = "_layouts"
@@ -17,29 +16,26 @@ outputAssetsDir = "_build/static"
 
 main :: IO ()
 main = do
+  putStrLn   "-------------------------------------------"
   putStrLn $ "Reading layouts at " ++ layoutsDir ++ ".. "
   layouts <- parseLayouts layoutsDir
+  forM_ layouts $ \case
+      Left e -> putStrLn (errorBundlePretty e)
+      _      -> pure ()
+
+  putStrLn   "-------------------------------------------"
   putStrLn $ "Reading src at " ++ layoutsDir ++ ".. "
   srcFiles <- parseSrc srcDir
-  putStrLn $ "Building into " ++ buildDir ++ ".. "
-
-  forM_ layouts $ \case
-      Left e  -> putStrLn (errorBundlePretty e)
-      Right _ -> pure ()
-
   let layouts' = rights layouts
   forM_ srcFiles $ \(path, eDoc) -> do
     case eDoc of
       Left err  -> putStrLn (errorBundlePretty err)
       Right doc -> saveFile buildDir (build layouts' (path, doc))
 
+  putStrLn   "-------------------------------------------"
+  putStrLn $ "Building into " ++ buildDir ++ ".. "
   putStrLn "Copying assets dir..."
   copyAssets assetsDir outputAssetsDir
 
-  port <- getPort 4000
-  serve buildDir port
-
-
-getPort :: Int -> IO Int
-getPort defaultPort = maybe defaultPort read <$> lookupEnv "PORT"
-
+  putStrLn   "-------------------------------------------"
+  serve buildDir
