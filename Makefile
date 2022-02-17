@@ -1,5 +1,5 @@
 run:
-	cabal run haskell-ssg
+	cabal run haskell-ssg -- _src
 
 repl:
 	cabal repl

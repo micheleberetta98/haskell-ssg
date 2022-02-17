@@ -4,18 +4,20 @@ module Main where
 import           Control.Monad
 import           Data.Either
 import           Files
+import           Opts
 import           Server
 import           Text.Megaparsec (errorBundlePretty)
 
-layoutsDir, srcDir, buildDir, assetsDir, outputAssetsDir :: FilePath
-layoutsDir = "_layouts"
-srcDir     = "_src"
-buildDir   = "_build"
-assetsDir  = "_static"
-outputAssetsDir = "_build/static"
-
 main :: IO ()
 main = do
+  opts <- getOpts
+
+  let layoutsDir   = layoutsFolder opts
+      srcDir       = srcFolder opts
+      buildDir     = buildFolder opts
+      assetsDir    = staticFolder opts
+      outAssetsDir = outputStaticFolder opts
+
   putStrLn   "-------------------------------------------"
   putStrLn $ "Reading layouts at " ++ layoutsDir ++ ".. "
   layouts <- parseLayouts layoutsDir
@@ -35,7 +37,7 @@ main = do
   putStrLn   "-------------------------------------------"
   putStrLn $ "Building into " ++ buildDir ++ ".. "
   putStrLn "Copying assets dir..."
-  copyAssets assetsDir outputAssetsDir
+  copyAssets assetsDir outAssetsDir
 
   putStrLn   "-------------------------------------------"
   serve buildDir
