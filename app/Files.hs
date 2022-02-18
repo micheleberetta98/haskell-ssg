@@ -34,9 +34,12 @@ saveFile dir (path, Just stuff) = do
     swapRootDir (_ : rest)   = dir : rest
 
 copyAssets :: FilePath -> FilePath -> IO ()
-copyAssets from to = do
-  createDirectoryIfMissing True to
-  copyDir from to
+copyAssets from to = walkDir from $ \p -> do
+    let path' = takeDirectory (dropRootDir p)
+    createDirectoryIfMissing True (to </> path')
+    copyFile p (to </> path' </> takeFileName p)
+  where
+    dropRootDir = joinPath . drop 1 . splitDirectories
 
 ------------ Parsing of layouts and src files
 
@@ -64,15 +67,9 @@ parseFile path p = do
   result <- parse p path <$> TIO.readFile path
   pure [(path, result)]
 
-copyDir :: FilePath -> FilePath -> IO ()
-copyDir path to = do
+walkDir :: FilePath -> (FilePath -> IO ()) -> IO ()
+walkDir path f = do
   isFile <- doesFileExist path
   if isFile
-    then copyFile path (to </> takeFileName path)
-    else do
-      createDirectoryIfMissing True (to </> path')
-      paths <- listDirectory path
-      mapM_ (\p -> copyDir (path </> p) (to </> path')) paths
-  where
-    path' = dropRootDir path
-    dropRootDir = joinPath . drop 1 . splitDirectories
+    then f path
+    else listDirectory path >>= mapM_ (\p -> walkDir (path </> p) f)
