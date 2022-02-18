@@ -1,12 +1,18 @@
 {-# LANGUAGE LambdaCase    #-}
 {-# LANGUAGE TupleSections #-}
+{-|
+  Module      : Macro.Internal
+  Description : The internals of 'Macro'
 
+  This modules contains all the necessary data types and functions to work with
+  the type 'Macro', their applications and expansion.
+-}
 module Macro.Internal where
 
 import           Data.List
 import           Data.Maybe
-import           Data.Text         (Text)
-import           Document.Internal
+import           Data.Text  (Text)
+import           Document
 
 ------------ Custom types
 

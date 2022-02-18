@@ -1,3 +1,11 @@
+{-|
+  Module      : Parser.Internal
+  Description : The internals of 'Parser'
+
+  All the parsing rules for the language. Mainly, a 'document' and a 'macro' are considered the
+  top level forms that a specific file can have.
+  Here are also defined utilities, space consumers and special characters.
+-}
 module Parser.Internal where
 
 import           Control.Applicative.Permutations
@@ -5,7 +13,7 @@ import           Data.Char
 import           Data.Text                        (Text)
 import qualified Data.Text                        as T
 import           Data.Void                        (Void)
-import           Document.Internal
+import           Document
 import           Macro
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
@@ -13,8 +21,10 @@ import qualified Text.Megaparsec.Char.Lexer       as L
 
 ------------ Custom types
 
+-- | The custom parser
 type Parser = Parsec Void Text
 
+-- | The custom parsing error
 type ParserError = ParseErrorBundle Text Void
 
 ------------ Main entities
@@ -64,7 +74,7 @@ list = parens "(" ")" $
 unquote :: Parser Content
 unquote = Unquote <$> (char '@' *> identifier)
 
--- | Parses a 'String' in the form of @\"anything goes\"@.
+-- | Parses a 'Document.String' in the form of @\"anything goes\"@.
 -- Newlines are permitted.
 contentString :: Parser Content
 contentString = String <$> stringedLiteral
@@ -100,12 +110,15 @@ stringedLiteral = between (char '"') (symbol "\"") $
 identifier :: Parser Text
 identifier = lexeme $ T.pack <$> some (noneOf specialChars)
 
+-- | Wraps a parser in two opening and closing symbols
 parens :: Text -> Text -> Parser a -> Parser a
 parens open close = between (symbol open) (symbol close)
 
+-- | Adds a space consumer to a parser
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
 
+-- | Parses a specific string as a symbol
 symbol :: Text -> Parser Text
 symbol = L.symbol sc
 

@@ -1,3 +1,11 @@
+{-|
+  Module      : Document.Internal
+  Description : The internals of 'Document'
+
+  This modules contains all the necessary data types and functions to work with
+  the type 'Document', as well as all the tag mappings between the language and
+  HTML.
+-}
 module Document.Internal where
 
 import           Data.Bifunctor              (Bifunctor (first))
@@ -29,13 +37,14 @@ data Config = Config
   , configLayout    :: Text
   } deriving (Show, Eq)
 
--- | A 'Content' is essentialy a list or a single element ('Unquote' or 'String').
+-- | A 'Content' is essentialy a list or a single element ('Unquote' or 'Document.Internal.String').
 data Content
   = List Text AttrList [Content]
   | Unquote Text
   | String Text
   deriving (Show, Eq)
 
+-- | A list of attributes, represented as tuples
 type AttrList = [(Text, Content)]
 
 ------------ Html conversion
