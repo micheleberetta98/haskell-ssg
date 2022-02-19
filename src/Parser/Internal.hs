@@ -10,15 +10,14 @@
 module Parser.Internal where
 
 import           Control.Applicative.Permutations
-import           Control.Monad                    (when)
-import           Data.Char
+import           Control.Monad
 import qualified Data.Set                         as S
 import           Data.Text                        (Text)
 import qualified Data.Text                        as T
-import           Data.Void                        (Void)
 import           Document
 import           Macro
 import           Parser.Env
+import           Prelude                          hiding (id)
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer       as L
@@ -99,7 +98,7 @@ content env = recover $ choice
   where
     recover = withRecovery $ \e -> do
       registerParseError e
-      lexeme $ some (noneOf specialChars)
+      void $ lexeme $ some (noneOf specialChars)
       pure (String "")
 
 -- | Parses a single 'List'.
@@ -139,8 +138,8 @@ attrList env = parens "[" "]" $ many $ recover $ parens "(" ")" $ do
   where
     recover = withRecovery $ \e -> do
       registerParseError e
-      some (noneOf specialChars)
-      oneOf specialChars
+      void $ some (noneOf specialChars)
+      void $ oneOf specialChars
       pure ("", String "")
 
 -- | A 'stringedLiteral' is some 'Text' between two @\"@ characters.

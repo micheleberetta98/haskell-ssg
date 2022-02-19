@@ -21,7 +21,7 @@ import           Document
 -- the @name@ is encountered. Eventual 'Unquote' will be expanded
 -- with the parameters. For example, @(macro foo (content bar))@ is
 -- a macro named /foo/ that has a parameter /content/.
-data Macro = Macro { name :: Text , body :: [Content] }
+data Macro = Macro { macroName :: Text , macroBody :: [Content] }
   deriving (Show, Eq)
 
 -- | A little utility type to represent macro params
@@ -43,7 +43,7 @@ applyLayout macros (Document config content) =
       ]
   where
     layoutName = configLayout config
-    hasName x m = name m == x
+    hasName x m = macroName m == x
 
 -- | Expands all macros in a list over a list of 'Content'.
 expandAll :: [Macro] -> [Content] -> [Content]
@@ -53,7 +53,7 @@ expandAll macros content = foldl' (flip expand) content macros
 expand :: Macro -> [Content] -> [Content]
 expand m@(Macro n body) = concatMap expand'
   where
-    expand' el@(List h attrs rest)
+    expand' (List h attrs rest)
       | h == n    = expand m (substitute params body)
       | otherwise = [List h (substituteAttrs params attrs) (expand m rest)]
       where params = buildParams rest
