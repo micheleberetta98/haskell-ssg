@@ -9,7 +9,9 @@ module Parser
   , ParserError
   , document
   , macro
+  , mkEnv
   )
 where
 
+import           Parser.Env
 import           Parser.Internal

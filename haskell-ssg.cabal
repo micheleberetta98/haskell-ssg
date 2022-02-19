@@ -28,6 +28,7 @@ library
                     , Macro
                     , Macro.Internal
                     , Parser
+                    , Parser.Env
                     , Parser.Internal
                     , ToHtml
     build-depends:    base ^>=4.14.3.0
