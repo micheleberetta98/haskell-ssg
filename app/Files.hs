@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Files
   ( parseLayouts
   , parseSrc
@@ -8,13 +10,15 @@ module Files
 where
 
 import           Control.Monad
-import qualified Data.Text.IO     as TIO
+import           Control.Monad.Reader
+import           Control.Monad.State
+import qualified Data.Text.IO         as TIO
 import           Document
 import           Macro
 import           Parser
 import           System.Directory
 import           System.FilePath
-import           Text.Megaparsec
+import           Text.Megaparsec      (MonadParsec (eof), parse)
 import           ToHtml
 
 ------------ "Building" files
@@ -49,20 +53,38 @@ copyAssets from to = void $ walkDir from $ \p -> do
 ------------ Parsing of layouts and src files
 
 -- | Parses a layout file (a 'Macro')
-parseLayouts :: FilePath -> IO [Either ParserError Macro]
-parseLayouts path = map snd <$> parsePath path (macro <* eof)
+parseLayouts :: FilePath -> StateT Env IO [Either ParserError Macro]
+parseLayouts path = do
+  env <- get
+  isFile <- liftIO (doesFileExist path)
+  if isFile
+    then parseMacro env >>= \case
+          Left e  -> pure [Left e]
+          Right m -> modify' (addMacroName (macroName m)) >> pure [Right m]
+    else do
+      ps <- liftIO (listDirectory path)
+      concat <$> mapM (\p -> parseLayouts (path </> p)) ps
+  where
+    parseMacro = liftIO . parseWithEnv macro path
 
 -- | Parses a 'Document' file
-parseSrc :: FilePath -> IO [(FilePath, Either ParserError Document)]
-parseSrc path = parsePath path (document <* eof)
+parseSrc :: FilePath -> ReaderT Env IO [(FilePath, Either ParserError Document)]
+parseSrc path = do
+  env <- ask
+  isFile <- liftIO (doesFileExist path)
+  if isFile
+    then parseDocument env >>= \doc -> pure [(path, doc)]
+    else do
+      ps <- liftIO (listDirectory path)
+      concat <$> mapM (\p -> parseSrc (path </> p)) ps
+  where
+    parseDocument = liftIO . parseWithEnv document path
 
 ------------ Utils
 
--- | Generic parsing of a path, file or directory
-parsePath :: FilePath -> Parser a -> IO [(FilePath, Either ParserError a)]
-parsePath path parser = walkDir path $ \p -> do
-  result <- parse parser path <$> TIO.readFile p
-  pure (p, result)
+-- | Little utility that parses a file with a specific 'Parser' and 'Env'
+parseWithEnv :: (Env -> Parser a) -> FilePath -> Env -> IO (Either ParserError a)
+parseWithEnv parser path env = parse (parser env <* eof) path <$> TIO.readFile path
 
 -- | Applies a function recursively to a directory
 walkDir :: FilePath -> (FilePath -> IO a) -> IO [a]

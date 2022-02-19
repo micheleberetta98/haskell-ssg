@@ -12,11 +12,10 @@ import           Text.Megaparsec
 parserSpec :: SpecWith ()
 parserSpec =
   describe "Parser" $ do
-    let env = Env
-              { validListNames = ["par", "nl", "a", "b", "c", "i"]
-              , validAttrNames = ["class", "required", "href"]
-              , macroNames     = ["already-existing"]
-              }
+    let env = mkEnv
+                ["par", "nl", "a", "b", "c", "i"]
+                ["class", "required", "href"]
+                ["already-existing"]
         macro' = macro env
         list' = list env
         attrList' = attrList env

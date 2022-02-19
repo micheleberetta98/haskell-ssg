@@ -59,6 +59,7 @@ executable haskell-ssg
                     , filepath
                     , haskell-ssg
                     , megaparsec
+                    , mtl
                     , optparse-applicative
                     , scotty
                     , text

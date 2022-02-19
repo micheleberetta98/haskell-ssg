@@ -1,12 +1,16 @@
 {-# LANGUAGE LambdaCase #-}
+
 module Main where
 
 import           Control.Monad
+import           Control.Monad.Reader
+import           Control.Monad.State
 import           Data.Either
 import           Files
 import           Opts
+import           Parser               (defaultEnv)
 import           Server
-import           Text.Megaparsec (errorBundlePretty)
+import           Text.Megaparsec      (errorBundlePretty)
 
 main :: IO ()
 main = do
@@ -27,14 +31,14 @@ main = do
 
   putStrLn   "-------------------------------------------"
   putStrLn $ "Reading layouts at " ++ layoutsDir ++ ".. "
-  layouts <- parseLayouts layoutsDir
+  (layouts, env') <- runStateT (parseLayouts layoutsDir) defaultEnv
   forM_ layouts $ \case
       Left e -> putStrLn (errorBundlePretty e)
       _      -> pure ()
 
   putStrLn   "-------------------------------------------"
-  putStrLn $ "Reading src at " ++ layoutsDir ++ ".. "
-  srcFiles <- parseSrc srcDir
+  putStrLn $ "Reading src at " ++ srcDir ++ ".. "
+  srcFiles <- runReaderT (parseSrc srcDir) env'
   let layouts' = rights layouts
   forM_ srcFiles $ \(path, eDoc) -> do
     case eDoc of

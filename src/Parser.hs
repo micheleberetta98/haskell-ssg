@@ -7,9 +7,12 @@
 module Parser
   ( Parser
   , ParserError
+  , Env
   , document
   , macro
   , mkEnv
+  , addMacroName
+  , defaultEnv
   )
 where
 
