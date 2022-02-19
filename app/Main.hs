@@ -10,7 +10,14 @@ import           Text.Megaparsec (errorBundlePretty)
 
 main :: IO ()
 main = do
-  opts <- getOpts
+  -- opts <- getOpts
+  let opts = Options
+              { srcFolder = "_src"
+              , layoutsFolder = "_layouts"
+              , staticFolder = "_static"
+              , buildFolder = "_build"
+              , outputStaticFolder = "_build/static"
+              }
 
   let layoutsDir   = layoutsFolder opts
       srcDir       = srcFolder opts

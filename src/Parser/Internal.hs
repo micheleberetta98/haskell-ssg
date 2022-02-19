@@ -22,10 +22,30 @@ import qualified Text.Megaparsec.Char.Lexer       as L
 ------------ Custom types
 
 -- | The custom parser
-type Parser = Parsec Void Text
+type Parser = Parsec CustomError Text
 
--- | The custom parsing error
-type ParserError = ParseErrorBundle Text Void
+-- | Parsing error (exported for type signatures)
+type ParserError = ParseErrorBundle Text CustomError
+
+------------ Custom errors
+
+-- | A custom error type
+data CustomError
+  = InvalidListName Text  -- ^ The name of an invalid 'Document.List'
+  | InvalidAttrName Text  -- ^ The name of an invalid attribute
+  deriving (Eq, Show, Ord)
+
+instance ShowErrorComponent CustomError where
+  showErrorComponent (InvalidListName name) = T.unpack name ++ " is not a valid block name"
+  showErrorComponent (InvalidAttrName name)  = T.unpack name ++ " is not a valid attribute name"
+
+-- | Helper for a custom 'InvalidListName' error
+invalidListName :: Text -> Parser a
+invalidListName = customFailure . InvalidListName
+
+-- | Helper for a custom 'InvalidAttrName' error
+invalidAttrName :: Text -> Parser a
+invalidAttrName = customFailure . InvalidAttrName
 
 ------------ Main entities
 
