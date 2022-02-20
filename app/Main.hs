@@ -31,19 +31,19 @@ main = do
 
   putStrLn   "-------------------------------------------"
   putStrLn $ "Reading layouts at " ++ layoutsDir ++ ".. "
-  (layouts, env') <- runStateT (parseLayouts layoutsDir) defaultEnv
-  forM_ layouts $ \case
+  (macros, env') <- runStateT (parseLayouts layoutsDir) defaultEnv
+  forM_ macros $ \case
       Left e -> putStrLn (errorBundlePretty e)
       _      -> pure ()
 
   putStrLn   "-------------------------------------------"
   putStrLn $ "Reading src at " ++ srcDir ++ ".. "
   srcFiles <- runReaderT (parseSrc srcDir) env'
-  let layouts' = rights layouts
+  let macros' = rights macros
   forM_ srcFiles $ \(path, eDoc) -> do
     case eDoc of
       Left err  -> putStrLn (errorBundlePretty err)
-      Right doc -> saveFile buildDir (build layouts' (path, doc))
+      Right doc -> saveFile buildDir (build macros' (path, doc))
 
   putStrLn   "-------------------------------------------"
   putStrLn $ "Building into " ++ buildDir ++ ".. "

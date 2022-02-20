@@ -25,7 +25,7 @@ import           ToHtml
 
 -- | Applies a layout (i.e. a 'Macro') to a 'Document'
 build :: [Macro] -> (FilePath, Document) -> (FilePath, Maybe [Content])
-build layouts = fmap (applyLayout layouts)
+build macros (path, doc) = (path, expandAll macros <$> applyLayout macros doc)
 
 -- | Writes the HTML of a list of 'Content' into a specific directory
 saveFile :: FilePath -> (FilePath, Maybe [Content]) -> IO ()
