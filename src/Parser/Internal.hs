@@ -61,8 +61,7 @@ idAlreadyTakenAt = registerCustomFailure IdentifierAlreadyTaken
 
 -- | Utility to register a 'CustomError'.
 registerCustomFailure :: (Text -> CustomError) -> Int -> Text -> Parser ()
-registerCustomFailure f o x = region (setErrorOffset o)
-  $ registerFancyFailure $ S.singleton $ ErrorCustom $ f x
+registerCustomFailure f o = region (setErrorOffset o) . registerFancyFailure . S.singleton . ErrorCustom . f
 
 ------------ Main entities
 
