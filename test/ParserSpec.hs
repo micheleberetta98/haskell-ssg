@@ -36,18 +36,17 @@ parserSpec =
       parse identifier "" "(identifierfier)" `shouldSatisfy` isLeft
 
     it "should parse macros" $ do
-      parse macroWithEnv "" "(macro hi)" `shouldParse` Macro "hi" []
-      parse macroWithEnv "" "(macro how-are-you @title @content)" `shouldParse` Macro "how-are-you" [Unquote "title", Unquote "content"]
-      parse macroWithEnv "" "(Macro hi)" `shouldSatisfy` isLeft
-      parse macroWithEnv "" "(macro)" `shouldSatisfy` isLeft
-      parse macroWithEnv "" "(macro ())" `shouldSatisfy` isLeft
-      parse macroWithEnv "" "(Macro {test})" `shouldSatisfy` isLeft
+      parse macroWithEnv "" "'(how-are-you @title @content)" `shouldParse` Macro "how-are-you" [Unquote "title", Unquote "content"]
+      parse macroWithEnv "" "'(  {test}  @test)" `shouldParse` Macro "{test}" [Unquote "test"]
+      parse macroWithEnv "" "'()" `shouldSatisfy` isLeft
+      parse macroWithEnv "" "'(())" `shouldSatisfy` isLeft
 
     it "empty macros are a thing" $ do
-      parse macroWithEnv "" "(macro #)" `shouldParse` Macro "#" []
+      parse macroWithEnv "" "'(hi)" `shouldParse` Macro "hi" []
+      parse macroWithEnv "" "'(#)" `shouldParse` Macro "#" []
 
     it "cannot definte twice the same macro" $ do
-      parse macroWithEnv "" "(macro already-existing-macro)" `shouldSatisfy` isLeft
+      parse macroWithEnv "" "'(already-existing-macro)" `shouldSatisfy` isLeft
 
     it "should parse unquoted stuff" $ do
       parse unquote "" "@param-name" `shouldParse` Unquote "param-name"

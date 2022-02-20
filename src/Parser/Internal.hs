@@ -67,8 +67,9 @@ document env = Document <$> config <*> many (content env)
 -- | Parses a 'Macro' in the form @(macro <id> <body>)@,
 -- where id is an 'identifier' and body is zero or more 'content'.
 macro :: Env -> Parser Macro
-macro env = parens "(" ")"
-  $ symbol "macro" *> do
+macro env = do
+  void (char '\'')
+  parens "(" ")" $ do
     o <- getOffset
     id <- identifier
     body <- many (content env)
