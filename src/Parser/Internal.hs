@@ -41,9 +41,11 @@ data CustomError
   deriving (Eq, Show, Ord)
 
 instance ShowErrorComponent CustomError where
-  showErrorComponent (InvalidListName name)        = T.unpack name ++ " is not a valid list name"
-  showErrorComponent (InvalidAttrName name)        = T.unpack name ++ " is not a valid attribute name"
-  showErrorComponent (IdentifierAlreadyTaken name) = T.unpack name ++ " is already declared and cannot be used as a macro"
+  showErrorComponent = T.unpack . T.concat . errorMsg
+    where
+      errorMsg (InvalidListName name)        = ["\"", name, "\"", " is not a valid list name"]
+      errorMsg (InvalidAttrName name)        = ["\"", name, "\"", " is not a valid attribute name"]
+      errorMsg (IdentifierAlreadyTaken name) = ["\"", name, "\"", " is already declared and cannot be used as a macro"]
 
 -- | Helper for a custom 'InvalidListName' error
 invalidListName :: Text -> Parser ()
@@ -71,8 +73,8 @@ macro env = do
   void (char '\'')
   parens "(" ")" $ do
     o <- getOffset
-    id <- identifier
-    body <- many (content env)
+    id <- identifier <?> "macro name"
+    body <- many (content env) <?> "macro body"
     if isNameTaken env id
       then region (setErrorOffset o) $ idAlreadyTaken id >> pure (Macro "" [])
       else pure (Macro id body)
@@ -86,40 +88,39 @@ config = parens "{" "}" $ runPermutation $
     <*> toPermutationWithDefault Nothing (Just <$> key "custom-css")
     <*> toPermutationWithDefault "default" (key "layout")
   where
-    key s = symbol s *> stringedLiteral
+    key s = symbol s *> stringedLiteral <?> "a string literal"
 
 -- | Parses a single 'Content', which can be a 'list', an 'unquote' or a 'contentString'.
 content :: Env -> Parser Content
-content env = contents [unquote, contentString, list env]
+content env = contents
+  [ unquote
+  , contentString
+  , list env       <?> "a list"
+  ]
 
 -- | Parses a single 'List'.
 list :: Env -> Parser Content
 list env = parens "(" ")" $ do
   o <- getOffset
-  id <- identifier
-  attrs <- option [] (attrList env)
+  id <- identifier <?> "list or macro name"
+  attrs <- option [] (attrList env) <?> "list attributes"
 
-  if | isValidListName env id  -> List id attrs <$> many (content env)
-     | isValidMacroName env id -> List id attrs <$> many (content' env)
+  if | isValidListName env id  -> List id attrs <$> many (content env) <?> "list body"
+     | isValidMacroName env id -> List id attrs <$> many (list' env) <?> "macro parameters"
      | otherwise               -> do
        void $ many (content env) -- In order to report the errors
        region (setErrorOffset o) $ invalidListName id >> pure (List "" [] [])
 
 -- | Parses an 'Unquote', composed of @\@@ followed by an 'identifier'.
 unquote :: Parser Content
-unquote = Unquote <$> (char '@' *> identifier)
+unquote = Unquote <$> (char '@' *> identifier) <?> "an unquote (@)"
 
 -- | Parses a 'Document.String' in the form of @\"anything goes\"@.
 -- Newlines are permitted.
 contentString :: Parser Content
-contentString = String <$> stringedLiteral
+contentString = String <$> stringedLiteral <?> "a string literal"
 
 ------------ Macro body
-
--- | Parses a single 'Content', which can be a 'list'', an 'unquote' or a 'contentString'.
--- Almost identical to 'content', but used for the macro body.
-content' :: Env -> Parser Content
-content' env = contents [unquote, contentString, list' env]
 
 -- | A 'List' without the controls on the validity of the name.
 -- Used for macro bodies, where list names are like argument names.
@@ -132,14 +133,15 @@ list' env = parens "(" ")" $ List <$> identifier <*> pure [] <*> many (content e
 -- This is a recoverable parser, and in case of an error it will consume all inputs
 -- until a single @)@ is encountered.
 attrList :: Env -> Parser AttrList
-attrList env = parens "[" "]" $ many $ recover $ parens "(" ")" $ do
-  o <- getOffset
-  key <- identifier
-  value <- option (String "") (contentString <|> unquote)
-  if isValidAttrName env key
-    then pure (key, value)
-    else region (setErrorOffset o) $ invalidAttrName key >> pure ("", String "")
+attrList env = parens "[" "]" $ many $ recover (tuple <?> "a key-value tuple")
   where
+    tuple = parens "(" ")" $ do
+      o <- getOffset
+      key <- identifier <?> "a key"
+      value <- option (String "") (contentString <|> unquote) <?> "a string literal or an unquote"
+      if isValidAttrName env key
+        then pure (key, value)
+        else region (setErrorOffset o) $ invalidAttrName key >> pure ("", String "")
     recover = withRecovery $ \e -> do
       registerParseError e
       void $ some (noneOf specialChars)
