@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiWayIf #-}
+
 {-|
   Module      : Parser.Internal
   Description : The internals of 'Parser'
@@ -87,19 +88,8 @@ config = parens "{" "}" $ runPermutation $
     key s = symbol s *> stringedLiteral
 
 -- | Parses a single 'Content', which can be a 'list', an 'unquote' or a 'contentString'.
--- This is a recoverable parser, and in case of an error it will consume all inputs
--- until one of 'specialChars' is encountered.
 content :: Env -> Parser Content
-content env = recover $ choice
-  [ unquote
-  , contentString
-  , list env
-  ]
-  where
-    recover = withRecovery $ \e -> do
-      registerParseError e
-      void $ lexeme $ some (noneOf specialChars)
-      pure (String "")
+content env = contents [unquote, contentString, list env]
 
 -- | Parses a single 'List'.
 list :: Env -> Parser Content
@@ -107,11 +97,12 @@ list env = parens "(" ")" $ do
   o <- getOffset
   id <- identifier
   attrs <- option [] (attrList env)
-  body <- many (content env)
 
-  if isValidListName env id || isValidMacroName env id
-    then pure $ List id attrs body
-    else region (setErrorOffset o) $ invalidListName id >> pure (List "" [] [])
+  if | isValidListName env id  -> List id attrs <$> many (content env)
+     | isValidMacroName env id -> List id attrs <$> many (content' env)
+     | otherwise               -> do
+       void $ many (content env) -- In order to report the errors
+       region (setErrorOffset o) $ invalidListName id >> pure (List "" [] [])
 
 -- | Parses an 'Unquote', composed of @\@@ followed by an 'identifier'.
 unquote :: Parser Content
@@ -121,6 +112,18 @@ unquote = Unquote <$> (char '@' *> identifier)
 -- Newlines are permitted.
 contentString :: Parser Content
 contentString = String <$> stringedLiteral
+
+------------ Macro body
+
+-- | Parses a single 'Content', which can be a 'list'', an 'unquote' or a 'contentString'.
+-- Almost identical to 'content', but used for the macro body.
+content' :: Env -> Parser Content
+content' env = contents [unquote, contentString, list' env]
+
+-- | A 'List' without the controls on the validity of the name.
+-- Used for macro bodies, where list names are like argument names.
+list' :: Env -> Parser Content
+list' env = parens "(" ")" $ List <$> identifier <*> pure [] <*> many (content env)
 
 ------------ Utils
 
@@ -152,6 +155,17 @@ stringedLiteral = between (char '"') (symbol "\"") $
       , anySingleBut '\"'
       ]
     )
+
+-- | Parses a single 'Content' by choosing the first parser that succeeds among the ones passed in.
+-- This is a recoverable parser, and in case of an error it will consume all inputs
+-- until one of 'specialChars' is encountered.
+contents :: [Parser Content] -> Parser Content
+contents ps = recover (choice ps)
+  where
+    recover = withRecovery $ \e -> do
+      registerParseError e
+      void $ lexeme $ some (noneOf specialChars)
+      pure (String "")
 
 -- | An 'identifier' is some 'Text' with no 'specialChars' and cannot be empty.
 identifier :: Parser Text
