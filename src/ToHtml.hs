@@ -11,13 +11,14 @@ import           Data.Text                       (Text, pack)
 import           Text.Blaze.Html.Renderer.Pretty (renderHtml)
 import           Text.Blaze.Html5                (Html)
 
+-- | The class of types that have an 'Html' representation.
 class ToHtml a where
-  -- | Transforms a generic type @a@ in 'Html'
+  -- | Transforms a generic type @a@ in 'Html'.
   toHtml :: a -> Html
 
 instance ToHtml a => ToHtml [a] where
   toHtml = foldMap toHtml
 
--- | Renders the 'Html' as a strict 'Text'
+-- | Renders the 'Html' as a strict 'Text'.
 render :: Html -> Text
 render = pack . renderHtml

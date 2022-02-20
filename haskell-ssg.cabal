@@ -3,10 +3,12 @@ name:               haskell-ssg
 version:            0.1.0.0
 
 -- A short (one-line) description of the package.
--- synopsis:
+synopsis: A static site generator written in Haskell
 
 -- A longer description of the package.
--- description:
+description:
+    Haskell SSG is a static site generator written in Haskell. It defines its own language, inspired by
+    LISP syntax, that strives to be minimal and lightweight. It also supports arbitrary macro expansion.
 
 -- A URL where users can report bugs.
 -- bug-reports:

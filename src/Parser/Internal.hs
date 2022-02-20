@@ -25,15 +25,15 @@ import qualified Text.Megaparsec.Char.Lexer       as L
 
 ------------ Custom types
 
--- | The custom parser
+-- | The custom parser.
 type Parser = Parsec CustomError Text
 
--- | Parsing error (exported for type signatures)
+-- | Parsing error (exported for type signatures).
 type ParserError = ParseErrorBundle Text CustomError
 
 ------------ Custom errors
 
--- | A custom error type
+-- | A custom error type.
 data CustomError
   = InvalidListName Text         -- ^ The name of an invalid 'Document.List'
   | InvalidAttrName Text         -- ^ The name of an invalid attribute
@@ -47,19 +47,19 @@ instance ShowErrorComponent CustomError where
       errorMsg (InvalidAttrName name)        = ["\"", name, "\"", " is not a valid attribute name"]
       errorMsg (IdentifierAlreadyTaken name) = ["\"", name, "\"", " is already declared and cannot be used as a macro"]
 
--- | Helper for a custom 'InvalidListName' error
+-- | Helper for a custom 'InvalidListName' error.
 invalidListNameAt :: Int -> Text -> Parser ()
 invalidListNameAt = registerCustomFailure InvalidListName
 
--- | Helper for a custom 'InvalidAttrName' error
+-- | Helper for a custom 'InvalidAttrName' error.
 invalidAttrNameAt :: Int -> Text -> Parser ()
 invalidAttrNameAt = registerCustomFailure InvalidAttrName
 
--- | Helper for a custom 'IdentifierAlreadyTaken' error
+-- | Helper for a custom 'IdentifierAlreadyTaken' error.
 idAlreadyTakenAt :: Int -> Text -> Parser ()
 idAlreadyTakenAt = registerCustomFailure IdentifierAlreadyTaken
 
--- | Utility to register a 'CustomError'
+-- | Utility to register a 'CustomError'.
 registerCustomFailure :: (Text -> CustomError) -> Int -> Text -> Parser ()
 registerCustomFailure f o x = region (setErrorOffset o)
   $ registerFancyFailure $ S.singleton $ ErrorCustom $ f x
@@ -67,11 +67,11 @@ registerCustomFailure f o x = region (setErrorOffset o)
 ------------ Main entities
 
 -- | Parses a 'Document', comprised of one 'Config' and zero or more 'content',
--- according to a valid list of names
+-- according to a valid list of names.
 document :: Env -> Parser Document
 document env = Document <$> config <*> many (content env)
 
--- | Parses a 'Macro' in the form @(macro <id> <body>)@,
+-- | Parses a 'Macro' in the form @(macro \<id\> \<body\>)@,
 -- where id is an 'identifier' and body is zero or more 'content'.
 macro :: Env -> Parser Macro
 macro env = do
@@ -175,19 +175,19 @@ stringedLiteral = between (char '"') (symbol "\"") $
 identifier :: Parser Text
 identifier = lexeme $ T.pack <$> some (noneOf specialChars)
 
--- | Wraps a parser in two opening and closing symbols
+-- | Wraps a parser in two opening and closing symbols.
 parens :: Text -> Text -> Parser a -> Parser a
 parens open close = between (symbol open) (symbol close)
 
--- | Adds a space consumer to a parser
+-- | Adds a space consumer to a parser.
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
 
--- | Parses a specific string as a symbol
+-- | Parses a specific string as a symbol.
 symbol :: Text -> Parser Text
 symbol = L.symbol sc
 
--- | A space consumer
+-- | A space consumer.
 sc :: Parser ()
 sc = L.space space1 empty empty
 

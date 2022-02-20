@@ -1,5 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+{-|
+  Module      : Server
+  Description : Local server
+
+  The local server defined here runs on a specified port (environment variable @PORT@)
+  and serves a directory of HTML (and eventually static assets) files.
+-}
 module Server (serve) where
 
 import           System.Environment

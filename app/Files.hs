@@ -1,5 +1,12 @@
 {-# LANGUAGE LambdaCase #-}
 
+{-|
+  Module      : Files
+  Description : Source file management
+
+  This modules deals with copying and building source files, which can be macros, documents
+  or some static assets.
+-}
 module Files
   ( parseLayouts
   , parseSrc

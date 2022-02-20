@@ -23,7 +23,7 @@ import           ToHtml
 ------------ Custom types
 
 -- | A 'Document' represents the entire document in the language,
--- comprised of a 'Config' and a list of 'Content
+-- comprised of a 'Config' and a list of 'Content'.
 data Document = Document Config [Content]
   deriving (Show, Eq)
 
@@ -43,7 +43,7 @@ data Content
   | String Text
   deriving (Show, Eq)
 
--- | A list of attributes, represented as tuples
+-- | A list of attributes, represented as tuples.
 type AttrList = [(Text, Content)]
 
 ------------ Html conversion
@@ -54,14 +54,14 @@ instance ToHtml Content where
   toHtml _                   = H.text ""
 
 -- | A utility type that takes an 'AttrList' and some 'Html' body
--- to return a 'Html' object
+-- to return a 'Html' object.
 type HtmlMapping = AttrList -> Html -> Html
 
 -- | The possible list names
 defaultListNames :: [Text]
 defaultListNames = M.keys tagMapping
 
--- | Associations between custom list names and their respective HTML tag
+-- | Associations between custom list names and their respective HTML tag.
 tagMapping :: Map Text HtmlMapping
 tagMapping = M.fromList
   [ ("par",       tag  H.p)
@@ -84,24 +84,24 @@ tagMapping = M.fromList
   , ("link_",     tag' H.link)
   ]
 
--- | A tag with some content
+-- | A tag with some content.
 tag :: (Html -> Html) -> HtmlMapping
 tag t as = foldl' (H.!) t (mapMaybe toAttr as)
 
--- | A tag without content
+-- | A tag without content.
 tag' :: Html -> HtmlMapping
 tag' t as _ = foldl' (H.!) t (mapMaybe toAttr as)
 
--- | Converts a tuple into an 'Attribute'
+-- | Converts a tuple into an 'Attribute'.
 toAttr :: (Text, Content) -> Maybe Attribute
 toAttr (k, String v) = M.lookup k attrs <*> pure (fromString (T.unpack v))
 toAttr _             = Nothing
 
--- | The possible attribute names
+-- | The possible attribute names.
 defaultAttrNames :: [Text]
 defaultAttrNames = M.keys attrs
 
--- | Mapping between attribute names and their constructor function
+-- | Mapping between attribute names and their constructor function.
 attrs :: Map Text (AttributeValue -> Attribute)
 attrs = M.fromList
   [ ("accept", A.accept)

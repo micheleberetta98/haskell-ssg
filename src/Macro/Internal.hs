@@ -24,7 +24,7 @@ import           Document
 data Macro = Macro { macroName :: Text , macroBody :: [Content] }
   deriving (Show, Eq)
 
--- | A little utility type to represent macro params
+-- | A little utility type to represent macro params.
 type MacroParams = [(Text, [Content])]
 
 ------------ Macro expansion
@@ -45,11 +45,11 @@ applyLayout macros (Document config content) =
     layoutName = configLayout config
     hasName x m = macroName m == x
 
--- | Expands all macros in a list over a list of 'Content'.
+-- | Expands all macros in a list over a list of 'Document.Content'.
 expandAll :: [Macro] -> [Content] -> [Content]
 expandAll macros content = foldl' (flip expand) content macros
 
--- | Expands a single macro over a list of 'Content'
+-- | Expands a single macro over a list of 'Document.Content'.
 expand :: Macro -> [Content] -> [Content]
 expand m@(Macro n body) = concatMap expand'
   where
@@ -61,7 +61,7 @@ expand m@(Macro n body) = concatMap expand'
 
 ------------ Substitution
 
--- | Substitute all 'Unquote' with the corresponding parameter in a list of 'Content'
+-- | Substitute all 'Unquote' with the corresponding parameter in a list of 'Content'.
 substitute :: MacroParams -> [Content] -> [Content]
 substitute params = concat . mapMaybe substitute'
   where
@@ -69,7 +69,7 @@ substitute params = concat . mapMaybe substitute'
     substitute' (List h attrs rest) = Just [List h (substituteAttrs params attrs) (substitute params rest)]
     substitute' x                   = Just [x]
 
--- | Substitute all 'Unquote' with the corresponding parameter in an 'AttrList'
+-- | Substitute all 'Unquote' with the corresponding parameter in an 'AttrList'.
 substituteAttrs :: MacroParams -> AttrList -> AttrList
 substituteAttrs params = mapMaybe substituteAttrs'
   where
@@ -78,7 +78,7 @@ substituteAttrs params = mapMaybe substituteAttrs'
 
 ------------ Utils
 
--- | Builds the 'MacroParams' data structure from the body
+-- | Builds the 'MacroParams' data structure from the body.
 -- of a macro
 buildParams :: [Content] -> MacroParams
 buildParams = mapMaybe $ \case
