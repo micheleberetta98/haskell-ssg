@@ -15,7 +15,7 @@ parserSpec =
     let env = mkEnv
                 ["par", "nl", "a", "b", "c", "i"]
                 ["class", "required", "href"]
-                ["already-existing-macro"]
+                ["macro", "already-existing-macro"]
         macroWithEnv = macro env
         listWithEnv = list env
         attrListWithEnv = attrList env
@@ -69,7 +69,8 @@ parserSpec =
       parse listWithEnv "" "(invalid-list-name)" `shouldSatisfy` isLeft
 
     it "macro bodies can bypass the list of valid names" $ do
-      parse listWithEnv "" "(already-existing-macro (invalid-list-name \"Hello\"))" `shouldParse` List "already-existing-macro" [] [List "invalid-list-name" [] [String "Hello"]]
+      parse listWithEnv "" "(macro (invalid-list-name \"Hello\"))" `shouldParse` List "macro" [] [List "invalid-list-name" [] [String "Hello"]]
+      parse listWithEnv "" "(par (macro (this-is-ok) (this-too (this-is-not))))" `shouldSatisfy` isLeft
 
 
     it "should parse attribute lists" $ do
