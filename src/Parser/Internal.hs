@@ -48,16 +48,21 @@ instance ShowErrorComponent CustomError where
       errorMsg (IdentifierAlreadyTaken name) = ["\"", name, "\"", " is already declared and cannot be used as a macro"]
 
 -- | Helper for a custom 'InvalidListName' error
-invalidListName :: Text -> Parser ()
-invalidListName = registerCustomFailure InvalidListName
+invalidListNameAt :: Int -> Text -> Parser ()
+invalidListNameAt = registerCustomFailure InvalidListName
 
 -- | Helper for a custom 'InvalidAttrName' error
-invalidAttrName :: Text -> Parser ()
-invalidAttrName = registerCustomFailure InvalidAttrName
+invalidAttrNameAt :: Int -> Text -> Parser ()
+invalidAttrNameAt = registerCustomFailure InvalidAttrName
 
 -- | Helper for a custom 'IdentifierAlreadyTaken' error
-idAlreadyTaken :: Text -> Parser ()
-idAlreadyTaken = registerCustomFailure IdentifierAlreadyTaken
+idAlreadyTakenAt :: Int -> Text -> Parser ()
+idAlreadyTakenAt = registerCustomFailure IdentifierAlreadyTaken
+
+-- | Utility to register a 'CustomError'
+registerCustomFailure :: (Text -> CustomError) -> Int -> Text -> Parser ()
+registerCustomFailure f o x = region (setErrorOffset o)
+  $ registerFancyFailure $ S.singleton $ ErrorCustom $ f x
 
 ------------ Main entities
 
@@ -76,7 +81,7 @@ macro env = do
     id <- identifier <?> "macro name"
     body <- many (content env) <?> "macro body"
     if isNameTaken env id
-      then region (setErrorOffset o) $ idAlreadyTaken id >> pure (Macro "" [])
+      then idAlreadyTakenAt o id >> pure (Macro "" [])
       else pure (Macro id body)
 
 -- | Parses a document 'Config' in the form @{ key \"value\" }@.
@@ -91,12 +96,19 @@ config = parens "{" "}" $ runPermutation $
     key s = symbol s *> stringedLiteral <?> "a string literal"
 
 -- | Parses a single 'Content', which can be a 'list', an 'unquote' or a 'contentString'.
+-- This is a recoverable parser, and in case of an error it will consume all inputs
+-- until one of 'specialChars' is encountered.
 content :: Env -> Parser Content
-content env = contents
+content env = recover $ choice
   [ unquote
   , contentString
-  , list env       <?> "a list"
+  , list env <?> "a list"
   ]
+  where
+    recover = withRecovery $ \e -> do
+      registerParseError e
+      void $ lexeme $ some (noneOf specialChars)
+      pure (String "")
 
 -- | Parses a single 'List'.
 list :: Env -> Parser Content
@@ -109,7 +121,7 @@ list env = parens "(" ")" $ do
      | isValidMacroName env id -> List id attrs <$> many (list' env) <?> "macro parameters"
      | otherwise               -> do
        void $ many (content env) -- In order to report the errors
-       region (setErrorOffset o) $ invalidListName id >> pure (List "" [] [])
+       invalidListNameAt o id >> pure (List "" [] [])
 
 -- | Parses an 'Unquote', composed of @\@@ followed by an 'identifier'.
 unquote :: Parser Content
@@ -141,7 +153,7 @@ attrList env = parens "[" "]" $ many $ recover (tuple <?> "a key-value tuple")
       value <- option (String "") (contentString <|> unquote) <?> "a string literal or an unquote"
       if isValidAttrName env key
         then pure (key, value)
-        else region (setErrorOffset o) $ invalidAttrName key >> pure ("", String "")
+        else region (setErrorOffset o) $ invalidAttrNameAt o key >> pure ("", String "")
     recover = withRecovery $ \e -> do
       registerParseError e
       void $ some (noneOf specialChars)
@@ -158,17 +170,6 @@ stringedLiteral = between (char '"') (symbol "\"") $
       , anySingleBut '\"'
       ]
     )
-
--- | Parses a single 'Content' by choosing the first parser that succeeds among the ones passed in.
--- This is a recoverable parser, and in case of an error it will consume all inputs
--- until one of 'specialChars' is encountered.
-contents :: [Parser Content] -> Parser Content
-contents ps = recover (choice ps)
-  where
-    recover = withRecovery $ \e -> do
-      registerParseError e
-      void $ lexeme $ some (noneOf specialChars)
-      pure (String "")
 
 -- | An 'identifier' is some 'Text' with no 'specialChars' and cannot be empty.
 identifier :: Parser Text
@@ -193,7 +194,3 @@ sc = L.space space1 empty empty
 -- | Special chars, not permitted in identifiers.
 specialChars :: [Char]
 specialChars = [' ', '(', ')', '[', ']', '\"', '@', '\n']
-
--- | Utility to register a 'CustomError'
-registerCustomFailure :: (Text -> CustomError) -> Text -> Parser ()
-registerCustomFailure f x = registerFancyFailure $ S.singleton $ ErrorCustom $ f x
