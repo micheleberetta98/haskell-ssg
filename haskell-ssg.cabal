@@ -34,7 +34,7 @@ library
                     , Parser.Env
                     , Parser.Internal
                     , ToHtml
-    build-depends:    base ^>=4.14.3.0
+    build-depends:    base ^>=4.16.1.0
                     , containers
                     , megaparsec
                     , mtl
@@ -56,7 +56,7 @@ executable haskell-ssg
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
     ghc-options:      -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -O2
-    build-depends:    base ^>=4.14.3.0
+    build-depends:    base ^>=4.16.1.0
                     , directory
                     , filepath
                     , haskell-ssg
