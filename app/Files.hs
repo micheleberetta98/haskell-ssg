@@ -11,7 +11,7 @@
 module Files
   ( File
   , BuildError
-  , parseLayouts
+  , parseMacros
   , parseSrc
   , build
   , save
@@ -45,10 +45,10 @@ instance Show BuildError where
 ------------ "Building" files
 
 -- | Applies a layout (i.e. a 'Macro') to a 'Document'
-build :: [Macro] -> File Document -> Either BuildError (File [Content])
-build macros (File p doc) = File p <$> toEither (applyMacros doc)
+build :: [Layout] -> [Macro] -> File Document -> Either BuildError (File [Content])
+build layouts macros (File p doc) = File p <$> toEither (applyMacros doc)
   where
-    applyMacros = fmap (expandAll macros) . applyLayout macros
+    applyMacros = fmap (expandAll macros) . applyLayout layouts
     toEither (Just x) = Right x
     toEither Nothing  = Left (NoLayoutFound p)
 
@@ -75,9 +75,9 @@ copyAssets from to = void $ walkDir from $ \p -> do
 
 ------------ Parsing of layouts and src files
 
--- | Parses all layouts (a 'Macro') in a directory
-parseLayouts :: FilePath -> StateT Env IO [Either ParserError Macro]
-parseLayouts path = parseDir macro path $ const $
+-- | Parses all 'Macro's in a directory
+parseMacros :: FilePath -> StateT Env IO [Either ParserError Macro]
+parseMacros path = parseDir macro path $ const $
   \case
     Left e  -> pure [Left e]
     Right m -> modify' (addMacroName (macroName m)) >> pure [Right m]

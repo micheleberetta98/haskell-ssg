@@ -6,7 +6,7 @@ import           Data.Bifunctor
 import           Data.Foldable
 import           Document            (Content, Document)
 import           Files
-import           Macro               (Macro)
+import           Macro               (Layout, Macro)
 import           Opts                (Options (..), getOpts)
 import           Parser              (ParserError, defaultEnv)
 import           Server              (serve)
@@ -14,15 +14,18 @@ import           System.Exit         (exitFailure)
 import           System.IO           (hPutStrLn, stderr)
 import           Text.Megaparsec     (errorBundlePretty)
 
+type WithError = Either ParserError
+
 main :: IO ()
 main = do
-  (macros, docs) <- getMacrosAndDocuments
+  (layouts, macros, docs) <- getMacrosAndDocuments
 
   let (macroErrors, macros')   = separateErrors macros
+      (layoutErrors, layouts') = separateErrors layouts
       (fileErrors, docs')      = separateErrors docs
-      (buildErrors, finalDocs) = separateErrors $ map (build macros') docs'
+      (buildErrors, finalDocs) = separateErrors $ map (build layouts' macros') docs'
 
-      parserErrors = macroErrors <> fileErrors
+      parserErrors = macroErrors <> layoutErrors <> fileErrors
 
   unless (null parserErrors) $ printParserErrors parserErrors >> exitFailure
   unless (null buildErrors)  $ printBuildErrors buildErrors >> exitFailure
@@ -31,14 +34,19 @@ main = do
   buildDir <- buildFolder <$> getOpts
   serve buildDir
 
-getMacrosAndDocuments :: IO ([Either ParserError Macro], [Either ParserError (File Document)])
+getMacrosAndDocuments :: IO ([WithError Layout], [WithError Macro], [WithError (File Document)])
 getMacrosAndDocuments = do
   opts <- getOpts
   putStrLn "Reading macros..."
-  (macros, env) <- runStateT (parseLayouts (layoutsFolder opts)) defaultEnv
+  ((layouts, macros), env) <- getMacros opts
   putStrLn "Reading source files..."
   files <- evalStateT (parseSrc (srcFolder opts)) env
-  pure (macros, files)
+  pure (layouts, macros, files)
+  where
+    getMacros opts = flip runStateT defaultEnv $ do
+      ls <- parseMacros (layoutsFolder opts)
+      ms <- parseMacros (macrosFolder opts)
+      pure (ls, ms)
 
 saveFiles :: [File [Content]]  -> IO ()
 saveFiles docs = do
