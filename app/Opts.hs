@@ -8,6 +8,7 @@ import           Options.Applicative
 data Options = Options
   { srcFolder          :: FilePath
   , layoutsFolder      :: FilePath
+  , macrosFolder       :: FilePath
   , staticFolder       :: FilePath
   , buildFolder        :: FilePath
   , outputStaticFolder :: FilePath
@@ -31,6 +32,13 @@ options = Options
       <> metavar "LAYOUTS_FOLDER"
       <> value "_layouts"
       <> help "Folder with layout macros"
+      )
+  <*> strOption
+      (  long "macros"
+      <> short 'm'
+      <> metavar "MACROS_FOLDER"
+      <> value "_macros"
+      <> help "Folder with generic macros, not to be used as layouts"
       )
   <*> strOption
       (  long "static"

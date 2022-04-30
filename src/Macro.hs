@@ -12,7 +12,11 @@ module Macro
   , expandAll
   , applyLayout
   , Macro(..)
+  , Layout
   )
 where
 
 import           Macro.Internal
+
+-- | A useful alias
+type Layout = Macro
