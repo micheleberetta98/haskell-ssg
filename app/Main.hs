@@ -70,9 +70,6 @@ panicIfErrors es toStr = do
   mapM_ (hPutStrLn stderr . toStr) es
   exitFailure
 
-printErrors :: [String] -> IO ()
-printErrors =  mapM_ (hPutStrLn stderr)
-
 separateErrors :: [Either a b] -> ([a], [b])
 separateErrors = bimap reverse reverse . foldl' accum ([], [])
   where
