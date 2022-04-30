@@ -1,5 +1,5 @@
-{-# LANGUAGE LambdaCase    #-}
 {-# LANGUAGE TupleSections #-}
+
 {-|
   Module      : Macro.Internal
   Description : The internals of 'Macro'
