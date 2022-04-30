@@ -1,54 +1,65 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Main where
 
 import           Control.Monad
-import           Control.Monad.Reader
 import           Control.Monad.State
-import           Data.Either
+import           Data.Bifunctor
+import           Data.Foldable
+import           Document            (Content, Document)
 import           Files
-import           Opts
-import           Parser               (defaultEnv)
-import           Server
-import           Text.Megaparsec      (errorBundlePretty)
+import           Macro               (Macro)
+import           Opts                (Options (..), getOpts)
+import           Parser              (ParserError, defaultEnv)
+import           Server              (serve)
+import           System.Exit         (exitFailure)
+import           System.IO           (hPutStrLn, stderr)
+import           Text.Megaparsec     (errorBundlePretty)
 
 main :: IO ()
 main = do
-  -- opts <- getOpts
-  let opts = Options
-              { srcFolder = "_src"
-              , layoutsFolder = "_layouts"
-              , staticFolder = "_static"
-              , buildFolder = "_build"
-              , outputStaticFolder = "_build/static"
-              }
+  (macros, docs) <- getMacrosAndDocuments
 
-  let layoutsDir   = layoutsFolder opts
-      srcDir       = srcFolder opts
-      buildDir     = buildFolder opts
-      assetsDir    = staticFolder opts
-      outAssetsDir = outputStaticFolder opts
+  let (macroErrors, macros')   = separateErrors macros
+      (fileErrors, docs')      = separateErrors docs
+      (buildErrors, finalDocs) = separateErrors $ map (build macros') docs'
 
-  putStrLn   "-------------------------------------------"
-  putStrLn $ "Reading layouts at " ++ layoutsDir ++ ".. "
-  (macros, env') <- runStateT (parseLayouts layoutsDir) defaultEnv
-  forM_ macros $ \case
-      Left e -> putStrLn (errorBundlePretty e)
-      _      -> pure ()
+      parserErrors = macroErrors <> fileErrors
 
-  putStrLn   "-------------------------------------------"
-  putStrLn $ "Reading src at " ++ srcDir ++ ".. "
-  srcFiles <- runReaderT (parseSrc srcDir) env'
-  let macros' = rights macros
-  forM_ srcFiles $ \(path, eDoc) -> do
-    case eDoc of
-      Left err  -> putStrLn (errorBundlePretty err)
-      Right doc -> saveFile buildDir (build macros' (path, doc))
+  unless (null parserErrors) $ printParserErrors parserErrors >> exitFailure
+  unless (null buildErrors)  $ printBuildErrors buildErrors >> exitFailure
+  saveFiles finalDocs
 
-  putStrLn   "-------------------------------------------"
-  putStrLn $ "Building into " ++ buildDir ++ ".. "
-  putStrLn "Copying assets dir..."
-  copyAssets assetsDir outAssetsDir
-
-  putStrLn   "-------------------------------------------"
+  buildDir <- buildFolder <$> getOpts
   serve buildDir
+
+getMacrosAndDocuments :: IO ([Either ParserError Macro], [Either ParserError (File Document)])
+getMacrosAndDocuments = do
+  opts <- getOpts
+  putStrLn "Reading macros..."
+  (macros, env) <- runStateT (parseLayouts (layoutsFolder opts)) defaultEnv
+  putStrLn "Reading source files..."
+  files <- evalStateT (parseSrc (srcFolder opts)) env
+  pure (macros, files)
+
+saveFiles :: [File [Content]]  -> IO ()
+saveFiles docs = do
+  output <- buildFolder <$> getOpts
+  assets <- staticFolder <$> getOpts
+  outputAssets <- outputStaticFolder <$> getOpts
+  putStrLn "Building..."
+  mapM_ (save output) docs
+  copyAssets assets outputAssets
+
+printBuildErrors :: [BuildError] -> IO ()
+printBuildErrors = printErrorsWith show
+
+printParserErrors :: [ParserError] -> IO ()
+printParserErrors = printErrorsWith errorBundlePretty
+
+printErrorsWith :: (a -> String) -> [a] -> IO ()
+printErrorsWith f =  mapM_ (hPutStrLn stderr . f)
+
+separateErrors :: [Either a b] -> ([a], [b])
+separateErrors = bimap reverse reverse . foldl' accum ([], [])
+  where
+    accum (es, xs) (Left e)  = (e : es, xs)
+    accum (es, xs) (Right x) = (es, x : xs)

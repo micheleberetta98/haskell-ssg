@@ -1,4 +1,5 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase       #-}
 
 {-|
   Module      : Files
@@ -8,10 +9,12 @@
   or some static assets.
 -}
 module Files
-  ( parseLayouts
+  ( File
+  , BuildError
+  , parseLayouts
   , parseSrc
   , build
-  , saveFile
+  , save
   , copyAssets
   )
 where
@@ -19,7 +22,7 @@ where
 import           Control.Monad
 import           Control.Monad.Reader
 import           Control.Monad.State
-import qualified Data.Text.IO         as TIO
+import qualified Data.Text.IO         as T
 import           Document
 import           Macro
 import           Parser
@@ -28,19 +31,32 @@ import           System.FilePath
 import           Text.Megaparsec      (MonadParsec (eof), parse)
 import           ToHtml
 
+------------ Types and instances
+
+-- | A type to track a 'FilePath' along some content
+data File a = File FilePath a
+
+-- | Some errors can appear when building files, such as a layout or a 'Macro' missing
+newtype BuildError = NoLayoutFound FilePath
+
+instance Show BuildError where
+  show (NoLayoutFound p) = concat ["(!) Something went wrong at ", p, ": maybe the layout doesn't exist?"]
+
 ------------ "Building" files
 
 -- | Applies a layout (i.e. a 'Macro') to a 'Document'
-build :: [Macro] -> (FilePath, Document) -> (FilePath, Maybe [Content])
-build macros (path, doc) = (path, expandAll macros <$> applyLayout macros doc)
+build :: [Macro] -> File Document -> Either BuildError (File [Content])
+build macros (File p doc) = File p <$> toEither (applyMacros doc)
+  where
+    applyMacros = fmap (expandAll macros) . applyLayout macros
+    toEither (Just x) = Right x
+    toEither Nothing  = Left (NoLayoutFound p)
 
 -- | Writes the HTML of a list of 'Content' into a specific directory
-saveFile :: FilePath -> (FilePath, Maybe [Content]) -> IO ()
-saveFile _ (path, Nothing)      = do
-  putStrLn ("(!) Something's wrong at " ++ path ++ ": maybe the layout doesn't exist?") >> pure ()
-saveFile dir (path, Just stuff) = do
+save :: FilePath -> File [Content] -> IO ()
+save dir (File path stuff) = do
   createDirectoryIfMissing True (takeDirectory path')
-  TIO.writeFile path' (render $ toHtml stuff)
+  T.writeFile path' (render $ toHtml stuff)
   where
     path' = deriveNewPath path
     deriveNewPath = joinPath . swapRootDir . splitDirectories . flip replaceExtension "html"
@@ -59,39 +75,38 @@ copyAssets from to = void $ walkDir from $ \p -> do
 
 ------------ Parsing of layouts and src files
 
--- | Parses a layout file (a 'Macro')
+-- | Parses all layouts (a 'Macro') in a directory
 parseLayouts :: FilePath -> StateT Env IO [Either ParserError Macro]
-parseLayouts path = do
-  env <- get
-  isFile <- liftIO (doesFileExist path)
-  if isFile
-    then parseMacro env >>= \case
-          Left e  -> pure [Left e]
-          Right m -> modify' (addMacroName (macroName m)) >> pure [Right m]
-    else do
-      ps <- liftIO (listDirectory path)
-      concat <$> mapM (\p -> parseLayouts (path </> p)) ps
-  where
-    parseMacro = liftIO . parseWithEnv macro path
+parseLayouts path = parseDir macro path $ const $
+  \case
+    Left e  -> pure [Left e]
+    Right m -> modify' (addMacroName (macroName m)) >> pure [Right m]
 
--- | Parses a 'Document' file
-parseSrc :: FilePath -> ReaderT Env IO [(FilePath, Either ParserError Document)]
-parseSrc path = do
-  env <- ask
-  isFile <- liftIO (doesFileExist path)
-  if isFile
-    then parseDocument env >>= \doc -> pure [(path, doc)]
-    else do
-      ps <- liftIO (listDirectory path)
-      concat <$> mapM (\p -> parseSrc (path </> p)) ps
-  where
-    parseDocument = liftIO . parseWithEnv document path
+-- | Parses all 'Document's in a directory
+parseSrc :: FilePath -> StateT Env IO [Either ParserError (File Document)]
+parseSrc path = parseDir document path $ \p doc -> pure [File p <$> doc]
 
 ------------ Utils
 
+-- | Runs a parser against all files in a directory (subdirectories included),
+-- also allowing to keep an environment across all calls
+parseDir :: (Env -> Parser a)                               -- ^ A function to get the parser given an environment
+            -> FilePath                                     -- ^ The directory containing the files
+            -> (FilePath -> Either ParserError a -> StateT Env IO [b])  -- ^ What to do with the parser result on a single file
+            -> StateT Env IO [b]
+parseDir parser path k = do
+  isFile <- liftIO (doesFileExist path)
+  if isFile
+    then get >>= liftIO . parseWithEnv parser path >>= k path
+    else do
+      ps <- liftIO (listDirectory path)
+      concat <$> mapM parseSubDir ps
+  where
+    parseSubDir p = parseDir parser (path </> p) k
+
 -- | Little utility that parses a file with a specific 'Parser' and 'Env'
 parseWithEnv :: (Env -> Parser a) -> FilePath -> Env -> IO (Either ParserError a)
-parseWithEnv parser path env = parse (parser env <* eof) path <$> TIO.readFile path
+parseWithEnv parser path env = parse (parser env <* eof) path <$> T.readFile path
 
 -- | Applies a function recursively to a directory
 walkDir :: FilePath -> (FilePath -> IO a) -> IO [a]
