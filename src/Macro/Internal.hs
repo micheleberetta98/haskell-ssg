@@ -47,7 +47,14 @@ applyLayout macros (Document config content) =
 
 -- | Expands all macros in a list over a list of 'Document.Content'.
 expandAll :: [Macro] -> [Content] -> [Content]
-expandAll macros content = foldl' (flip expand) content macros
+expandAll macros = fix (foldl' (flip expand))
+  where
+    fix f content
+      | content' == content = content
+      | otherwise             = fix f content'
+      where
+        content' = f content macros
+
 
 -- | Expands a single macro over a list of 'Document.Content'.
 expand :: Macro -> [Content] -> [Content]

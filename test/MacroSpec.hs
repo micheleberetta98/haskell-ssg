@@ -10,6 +10,7 @@ import           Text.Megaparsec
 macroSpec :: SpecWith ()
 macroSpec =
   let l n = List n []
+      l_ n = l n []
   in
   describe "Macro" $ do
     it "should substitue correctly" $ do
@@ -18,14 +19,14 @@ macroSpec =
       substitute params [Unquote "param2"] `shouldBe` [String "goodbye"]
       substitute params [l "nl" []] `shouldBe` [l "nl" []]
       substitute params [l "p" [Unquote "param1", Unquote "__"]] `shouldBe` [l "p" [String "hello"]]
-      substitute params [l "p" [l "div" [], List "div" [] [Unquote "param2"]]] `shouldBe` [l "p" [l "div" [], l "div" [String "goodbye"]]]
+      substitute params [l "p" [l_ "div", List "div" [] [Unquote "param2"]]] `shouldBe` [l "p" [l_ "div", l "div" [String "goodbye"]]]
 
     it "should expand in documents' content" $ do
-      let m1 = Macro "m1" [l "div" [], l "p" [Unquote "content"]]
+      let m1 = Macro "m1" [l_ "div", l "p" [Unquote "content"]]
           m2 = Macro "m2" [l "p" [Unquote "content", l "nl" [], String "hello"]]
       let doc1 = l "m1" [l "content" [String "content1", String "content2"]]
           doc2 = l "m2" [l "content" [String "content1", String "content2"]]
-      expand m1 [doc1] `shouldBe` [l "div" [], l "p" [String "content1", String "content2"]]
+      expand m1 [doc1] `shouldBe` [l_ "div", l "p" [String "content1", String "content2"]]
       expand m2 [doc1] `shouldBe` [doc1]
       expand m1 [doc2] `shouldBe` [doc2]
       expand m2 [doc2] `shouldBe` [l "p" [String "content1", String "content2", l "nl" [], String "hello"]]
@@ -39,11 +40,11 @@ macroSpec =
       expand m [doc] `shouldBe` [List "div" [("class", String "red")] [String "content1", String "content2"]]
 
     it "should expand multiple macros" $ do
-      let m1 = Macro "m1" [l "div" [], l "p" [Unquote "content"]]
+      let m1 = Macro "m1" [l_ "div", l "p" [Unquote "content"]]
           m2 = Macro "m2" [l "p" [Unquote "content", l "section" [Unquote "content"], String "hello"]]
       let doc = [l "m1" [l "content" [String "macro 1 content"]], l "m2" [l "content" [String "macro 2 content"]]]
       expandAll [m1, m2] doc `shouldBe`
-        [ l "div" []
+        [ l_ "div"
         , l "p" [String "macro 1 content"]
         , l "p"
           [ String "macro 2 content"
@@ -53,3 +54,12 @@ macroSpec =
         ]
       expandAll [m1, m2] doc `shouldBe` expandAll [m2, m1] doc
       expandAll [m1, m1, m1] doc `shouldBe` expand m1 doc
+
+    it "should expand macros calling other macros" $ do
+      let m1 = Macro "m1" [l "H" [l "title" [String "Macro 1"]], Unquote "content"]
+          m2 = Macro "H" [l "h1" [Unquote "title"]]
+
+      let doc = [l "m1" [l "content" [String "Hello"]]]
+
+      expandAll [m1, m2] doc `shouldBe` [l "h1" [String "Macro 1"], String "Hello"]
+      expandAll [m2, m1] doc `shouldBe` [l "h1" [String "Macro 1"], String "Hello"]
