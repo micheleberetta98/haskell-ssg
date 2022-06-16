@@ -6,3 +6,6 @@ repl:
 
 cli:
 	cabal repl app/Main.hs --ghc-options="-Wwarn"
+
+ctest:
+	cabal test --test-show-details=direct
