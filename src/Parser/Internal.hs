@@ -12,6 +12,7 @@ module Parser.Internal where
 
 import           Control.Applicative.Permutations
 import           Control.Monad
+import           Control.Monad.State
 import qualified Data.Set                         as S
 import           Data.Text                        (Text)
 import qualified Data.Text                        as T
@@ -19,14 +20,14 @@ import           Document
 import           Macro
 import           Parser.Env
 import           Prelude                          hiding (id)
-import           Text.Megaparsec
+import           Text.Megaparsec                  hiding (State)
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer       as L
 
 ------------ Custom types
 
 -- | The custom parser.
-type Parser = Parsec CustomError Text
+type Parser = ParsecT CustomError Text (State Env)
 
 -- | Parsing error (exported for type signatures).
 type ParserError = ParseErrorBundle Text CustomError
@@ -67,21 +68,22 @@ registerCustomFailure f o = region (setErrorOffset o) . registerFancyFailure . S
 
 -- | Parses a 'Document', comprised of one 'Config' and zero or more 'content',
 -- according to a valid list of names.
-document :: Env -> Parser Document
-document env = Document <$> config <*> many (content env)
+document :: Parser Document
+document = Document <$> config <*> many content
 
 -- | Parses a 'Macro' in the form @(macro \<id\> \<body\>)@,
 -- where id is an 'identifier' and body is zero or more 'content'.
-macro :: Env -> Parser Macro
-macro env = do
+macro :: Parser Macro
+macro = do
   void (char '\'')
   parens "(" ")" $ do
     o <- getOffset
     id <- identifier <?> "macro name"
-    body <- many (content env) <?> "macro body"
-    if isNameTaken env id
+    body <- many content <?> "macro body"
+    nameTaken <- lift (isNameTaken id)
+    if nameTaken
       then idAlreadyTakenAt o id >> pure (Macro "" [])
-      else pure (Macro id body)
+      else lift (addMacroName id) >> pure (Macro id body)
 
 -- | Parses a document 'Config' in the form @{ key \"value\" }@.
 -- All key-value pairs are permutative and can appear in any order.
@@ -97,11 +99,11 @@ config = parens "{" "}" $ runPermutation $
 -- | Parses a single 'Content', which can be a 'list', an 'unquote' or a 'contentString'.
 -- This is a recoverable parser, and in case of an error it will consume all inputs
 -- until one of 'specialChars' is encountered.
-content :: Env -> Parser Content
-content env = recover $ choice
-  [ unquote
-  , contentString
-  , list env <?> "a list"
+content :: Parser Content
+content = recover $ choice
+  [ unquote         <?> "an unquote (@)"
+  , contentString   <?> "a string"
+  , listOrMacro     <?> "a list or a macro call"
   ]
   where
     recover = withRecovery $ \e -> do
@@ -109,18 +111,21 @@ content env = recover $ choice
       void $ lexeme $ some (noneOf specialChars)
       pure (String "")
 
--- | Parses a single 'List'.
-list :: Env -> Parser Content
-list env = parens "(" ")" $ do
-  o <- getOffset
-  id <- identifier <?> "list or macro name"
-  attrs <- option [] (attrList env) <?> "list attributes"
-
-  if | isValidListName env id  -> List id attrs <$> many (content env) <?> "list body"
-     | isValidMacroName env id -> List id attrs <$> many (list' env) <?> "macro parameters"
-     | otherwise               -> do
-       void $ many (content env) -- In order to report the errors
-       invalidListNameAt o id >> pure (List "" [] [])
+-- | Parses a single list, which can be a 'MacroCall' or a 'List'
+listOrMacro :: Parser Content
+listOrMacro = parens "(" ")" $ do
+    o <- getOffset
+    id <- identifier <?> "list or macro name"
+    isMacro <- lift (isValidMacroName id)
+    if isMacro
+      then MacroCall id <$> many macroArg <?> "macro parameters"
+      else do
+        attrs <- option [] attrList <?> "list's attributes"
+        body <- many content <?> "list body"
+        isList <- lift (isValidListName id)
+        if isList
+          then pure (List id attrs body)
+          else invalidListNameAt o id >> pure (List "" [] [])
 
 -- | Parses an 'Unquote', composed of @\@@ followed by an 'identifier'.
 unquote :: Parser Content
@@ -131,26 +136,30 @@ unquote = Unquote <$> (char '@' *> identifier) <?> "an unquote (@)"
 contentString :: Parser Content
 contentString = String <$> stringedLiteral <?> "a string literal"
 
------------- Macro body
+------------ Macro arguments
 
--- | A 'List' without the controls on the validity of the name.
+-- | A 'MacroArg', i.e. a list without the controls on the validity of the name.
 -- Used for macro bodies, where list names are like argument names.
-list' :: Env -> Parser Content
-list' env = parens "(" ")" $ List <$> identifier <*> pure [] <*> many (content env)
+macroArg :: Parser MacroArg
+macroArg = parens "(" ")" $
+  MacroArg
+  <$> (identifier <?> "parameter's name")
+  <*> many content
 
 ------------ Utils
 
 -- | An 'AttrList' is in the form of @[(param \"value") ...]@.
 -- This is a recoverable parser, and in case of an error it will consume all inputs
 -- until a single @)@ is encountered.
-attrList :: Env -> Parser AttrList
-attrList env = parens "[" "]" $ many $ recover (tuple <?> "a key-value tuple")
+attrList :: Parser AttrList
+attrList = parens "[" "]" $ many $ recover (tuple <?> "a key-value tuple")
   where
     tuple = parens "(" ")" $ do
       o <- getOffset
       key <- identifier <?> "a key"
       value <- option (String "") (contentString <|> unquote) <?> "a string literal or an unquote"
-      if isValidAttrName env key
+      isAttrName <- lift (isValidAttrName key)
+      if isAttrName
         then pure (key, value)
         else region (setErrorOffset o) $ invalidAttrNameAt o key >> pure ("", String "")
     recover = withRecovery $ \e -> do

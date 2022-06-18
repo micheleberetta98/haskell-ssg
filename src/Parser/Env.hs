@@ -7,10 +7,13 @@
 -}
 module Parser.Env where
 
-import           Data.Set          (Set)
-import qualified Data.Set          as S
-import           Data.Text         (Text)
-import           Document.Internal (defaultAttrNames, defaultListNames)
+import           Control.Monad.State
+import           Data.Set            (Set)
+import qualified Data.Set            as S
+import           Data.Text           (Text)
+import           Document.Internal   (defaultAttrNames, defaultListNames)
+
+type WithEnv = StateT Env
 
 -- | The 'Parser' environment.
 data Env = Env
@@ -31,25 +34,29 @@ mkEnv :: [Text] -- ^ Valid list names
 mkEnv list attrs macros = Env (S.fromList list) (S.fromList attrs) (S.fromList macros)
 
 -- | Adds a new macro name to the 'Env'.
-addMacroName :: Text -> Env -> Env
-addMacroName name env = env{ macroNames = S.insert name (macroNames env) }
+addMacroName :: Text -> State Env ()
+addMacroName name = modify' (\env -> env{ macroNames = S.insert name (macroNames env) })
 
 -- | Checks if a name already exists anywhere in the 'Env'.
-isNameTaken :: Env -> Text -> Bool
-isNameTaken env name = any (\f -> f env name) [isValidMacroName, isValidListName, isValidAttrName]
+isNameTaken :: Text -> State Env Bool
+isNameTaken name = do
+  isMacro <- isValidMacroName name
+  isList <- isValidListName name
+  isAttr <- isValidAttrName name
+  pure (isMacro || isList || isAttr)
 
 -- | Returns @True@ if the name is in the valid macro names.
-isValidMacroName :: Env -> Text -> Bool
+isValidMacroName :: Text -> State Env Bool
 isValidMacroName = isValueIn macroNames
 
 -- | Returns @True@ if the name is in the valid list names.
-isValidListName :: Env -> Text -> Bool
+isValidListName :: Text -> State Env Bool
 isValidListName = isValueIn validListNames
 
 -- | Returns @True@ if the name is in the valid attribute names.
-isValidAttrName :: Env -> Text -> Bool
+isValidAttrName :: Text -> State Env Bool
 isValidAttrName = isValueIn validAttrNames
 
 -- | Utility function to check if a name is in a specific list.
-isValueIn :: (Env -> Set Text) -> Env -> Text -> Bool
-isValueIn f env name = name `S.member` f env
+isValueIn :: (Env -> Set Text) -> Text -> State Env Bool
+isValueIn f name = gets ((name `S.member`) . f)
