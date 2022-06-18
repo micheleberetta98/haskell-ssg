@@ -16,7 +16,7 @@ module Parser
   , defaultEnv
   , runParser
   , parseWithEnv
-  , prettifyError
+  , prettyParserError
   )
 where
 
@@ -35,5 +35,5 @@ parseWithEnv :: Env -> Parser a -> FilePath -> Text -> Either ParserError a
 parseWithEnv env p path text = evalState (M.runParserT p path text) env
 
 -- | Re-export of 'Text.Megaparsec.errorBundlePretty'
-prettifyError :: (M.VisualStream a, M.TraversableStream a, M.ShowErrorComponent b) => M.ParseErrorBundle a b -> String
-prettifyError = M.errorBundlePretty
+prettyParserError :: (M.VisualStream a, M.TraversableStream a, M.ShowErrorComponent b) => M.ParseErrorBundle a b -> String
+prettyParserError = M.errorBundlePretty

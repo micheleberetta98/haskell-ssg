@@ -38,9 +38,11 @@ library
 
 executable haskell-ssg
     main-is:          Main.hs
-    other-modules:    Files
-                    , Server
+    other-modules:    Server
                     , Opts
+                    , Parsing
+                    , Building
+                    , File
     ghc-options:      -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -O2
     build-depends:    base ^>=4.16.1.0
                     , directory
