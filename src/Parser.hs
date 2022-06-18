@@ -2,20 +2,25 @@
   Module      : Parser
   Description : The parser for the language
 
-  The main parsing rules for the language. A file can be either a 'document' or a 'macro'.
+  The main parsing rules for the language. A file can be either a 'Document.Document' or a 'macro'.
 -}
 module Parser
-  ( Parser
+  ( -- * Types
+    Parser
   , ParserError
   , Env
+  -- * Main parsers
   , document
   , macro
   , macros
+  -- * Environment
   , mkEnv
   , addMacroName
   , defaultEnv
+  -- * Running a parser
   , runParser
   , parseWithEnv
+  -- * Pretty printing errors
   , prettyParserError
   )
 where

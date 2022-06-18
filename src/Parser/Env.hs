@@ -1,8 +1,8 @@
 {-|
   Module      : Parser.Env
-  Description : Environment for a 'Parser'
+  Description : Environment for a parser
 
-  Here it's specified the environment for a Parser, consisting of valid
+  Here it's specified the environment for a parser, consisting of valid
   list and attribute names.
 -}
 module Parser.Env where
@@ -13,7 +13,7 @@ import qualified Data.Set            as S
 import           Data.Text           (Text)
 import           Document.Internal   (defaultAttrNames, defaultListNames)
 
--- | The 'Parser' environment.
+-- | The parser's environment.
 data Env = Env
   { validListNames :: Set Text
   , validAttrNames :: Set Text

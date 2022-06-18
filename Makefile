@@ -1,4 +1,5 @@
 test: cabal-test
+doc: cabal-haddock
 
 build:
 	cabal build
@@ -14,3 +15,5 @@ cli:
 
 cabal-test:
 	cabal test --test-show-details=direct
+cabal-haddock:
+	cabal haddock

@@ -4,7 +4,7 @@
   Module      : Parser.Internal
   Description : The internals of 'Parser'
 
-  All the parsing rules for the language. Mainly, a 'document' and a 'macro' are considered the
+  All the parsing rules for the language. Mainly, a 'Document.Document' and a 'macro' are considered the
   top level forms that a specific file can have.
   Here are also defined utilities, space consumers and special characters.
 -}
@@ -24,7 +24,8 @@ import           Text.Megaparsec                  hiding (State)
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer       as L
 
------------- Custom types
+------------------------------------------------------------------------------------
+-- * Types
 
 -- | The custom parser.
 type Parser = ParsecT CustomError Text (State Env)
@@ -32,13 +33,11 @@ type Parser = ParsecT CustomError Text (State Env)
 -- | Parsing error (exported for type signatures).
 type ParserError = ParseErrorBundle Text CustomError
 
------------- Custom errors
-
 -- | A custom error type.
 data CustomError
-  = InvalidListName Text         -- ^ The name of an invalid 'Document.List'
-  | InvalidAttrName Text         -- ^ The name of an invalid attribute
-  | IdentifierAlreadyTaken Text  -- ^ The name of a macro that shadows an already existing name
+  = InvalidListName Text         -- ^ The name of an invalid 'Document.List'.
+  | InvalidAttrName Text         -- ^ The name of an invalid attribute key.
+  | IdentifierAlreadyTaken Text  -- ^ The name of a macro that shadows an already existing name.
   deriving (Eq, Show, Ord)
 
 instance ShowErrorComponent CustomError where
@@ -47,6 +46,9 @@ instance ShowErrorComponent CustomError where
       errorMsg (InvalidListName name)        = ["\"", name, "\"", " is not a valid list name"]
       errorMsg (InvalidAttrName name)        = ["\"", name, "\"", " is not a valid attribute name"]
       errorMsg (IdentifierAlreadyTaken name) = ["\"", name, "\"", " is already declared and cannot be used as a macro"]
+
+------------------------------------------------------------------------------------
+-- * Error helpers
 
 -- | Helper for a custom 'InvalidListName' error.
 invalidListNameAt :: Int -> Text -> Parser ()
@@ -64,15 +66,16 @@ idAlreadyTakenAt = registerCustomFailure IdentifierAlreadyTaken
 registerCustomFailure :: (Text -> CustomError) -> Int -> Text -> Parser ()
 registerCustomFailure f o = region (setErrorOffset o) . registerFancyFailure . S.singleton . ErrorCustom . f
 
------------- Main entities
+------------------------------------------------------------------------------------
+-- * Main entities
 
--- | Parses a 'Document', comprised of one 'Config' and zero or more 'content',
+-- | Parses a 'Document.Document', comprised of one 'Document.Config' and zero or more 'Document.Content',
 -- according to a valid list of names.
 document :: Parser Document
 document = Document <$> config <*> many content
 
--- | Parses a 'Macro' in the form @(macro \<id\> \<body\>)@,
--- where id is an 'identifier' and body is zero or more 'content'.
+-- | Parses a 'Macro' in the form @'(macro \<id\> \<body\>)@,
+-- where id is an 'identifier' and body is zero or more 'Document.Content'.
 macro :: Parser Macro
 macro = parens "'(" ")" $ do
   o <- getOffset
@@ -83,11 +86,11 @@ macro = parens "'(" ")" $ do
     then idAlreadyTakenAt o id >> pure (Macro "" [])
     else lift (addMacroName id) >> pure (Macro id body)
 
--- | Little utility for parsing multime macros
+-- | Little utility for parsing multime macros.
 macros :: Parser [Macro]
 macros = many macro
 
--- | Parses a document 'Config' in the form @{ key \"value\" }@.
+-- | Parses a document 'Document.Config' in the form @{ key \"value\" }@.
 -- All key-value pairs are permutative and can appear in any order.
 config :: Parser Config
 config = parens "{" "}" $ runPermutation $
@@ -98,7 +101,7 @@ config = parens "{" "}" $ runPermutation $
   where
     key s = symbol s *> stringedLiteral <?> "a string literal"
 
--- | Parses a single 'Content', which can be a 'list', an 'unquote' or a 'contentString'.
+-- | Parses a single 'Document.Content', which can be a 'listOrMacro', an 'unquote' or a 'contentString'.
 -- This is a recoverable parser, and in case of an error it will consume all inputs
 -- until one of 'specialChars' is encountered.
 content :: Parser Content
@@ -113,7 +116,7 @@ content = recover $ choice
       void $ lexeme $ some (noneOf specialChars)
       pure (String "")
 
--- | Parses a single list, which can be a 'MacroCall' or a 'List'
+-- | Parses a single list, which can be a 'MacroCall' or a 'List'.
 listOrMacro :: Parser Content
 listOrMacro = parens "(" ")" $ do
     o <- getOffset
@@ -138,9 +141,10 @@ unquote = Unquote <$> (unquoteToken *> identifier) <?> "an unquote (@)"
 contentString :: Parser Content
 contentString = String <$> stringedLiteral <?> "a string literal"
 
------------- Macro arguments
+------------------------------------------------------------------------------------
+-- * Macro arguments
 
--- | A 'MacroArg', i.e. a list without the controls on the validity of the name.
+-- | A 'MacroArg' parser, i.e. a list without the controls on the validity of the name.
 -- Used for macro bodies, where list names are like argument names.
 macroArg :: Parser MacroArg
 macroArg = parens "(" ")" $
@@ -148,7 +152,8 @@ macroArg = parens "(" ")" $
   <$> (identifier <?> "parameter's name")
   <*> many content
 
------------- Attribute lists
+------------------------------------------------------------------------------------
+-- * Attribute lists
 
 -- | An 'AttrList' is in the form of @[(param \"value") ...]@.
 -- This is a recoverable parser, and in case of an error it will consume all inputs
@@ -170,15 +175,16 @@ attrList = AttrList <$> (parens "[" "]" $ many $ recover (tuple <?> "a key-value
       void $ oneOf specialChars
       pure ("", AString "")
 
--- | A parser for a string literal in the context of attribute lists
+-- | A parser for a string literal in the context of attribute lists.
 attrPairString :: Parser AttrPairValue
 attrPairString = AString <$> stringedLiteral <?> "a string literal"
 
--- | A parser for an unquote in the context of attribute lists
+-- | A parser for an unquote in the context of attribute lists.
 attrPairUnquote :: Parser AttrPairValue
 attrPairUnquote = AUnquote <$> (unquoteToken *> identifier) <?> "an unquote (@)"
 
------------- Utils
+------------------------------------------------------------------------------------
+-- * Utils
 
 -- | A 'stringedLiteral' is some 'Text' between two @\"@ characters.
 -- It can be empty.

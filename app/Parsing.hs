@@ -55,12 +55,11 @@ getMacrosAndDocuments = flip evalStateT defaultEnv $ do
 parseMacros :: FilePath -> StateT Env IO [Either ParserError [Macro]]
 parseMacros path = parseDir macros path $ const $ \x -> pure [x]
 
--- | Parses all 'Document's in a directory
+-- | Parses all 'Document.Document's in a directory
 parseSrc :: FilePath -> StateT Env IO [Either ParserError (File Document)]
 parseSrc path = parseDir document path $ \p doc -> pure [File p <$> doc]
 
------------- Utilities
-
+-- | Separates a list of @[Either a b]@ into @([a], [b])@
 separateErrors :: [Either a b] -> ([a], [b])
 separateErrors = bimap reverse reverse . foldl' accum ([], [])
   where

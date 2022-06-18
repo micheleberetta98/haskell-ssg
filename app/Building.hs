@@ -21,8 +21,6 @@ import           File
 import           Macro
 import           ToHtml
 
------------- Types and instances
-
 -- | Some errors can appear when building files, such as a layout or a 'Macro' missing
 newtype BuildError = NoLayoutFound FilePath
 
@@ -35,8 +33,6 @@ instance Exception BuildErrors
 instance Show BuildError where
   show (NoLayoutFound p) = concat ["(!) Something went wrong at ", p, ": maybe the layout doesn't exist?"]
 
------------- Building files
-
 buildFiles :: ([Layout], [Macro], [File Document]) -> IO [File [Content]]
 buildFiles (layouts, macros, docs) = do
   let (buildErrors, finalDocs) = separateErrors $ map (build layouts macros) docs
@@ -44,7 +40,7 @@ buildFiles (layouts, macros, docs) = do
     throw (BuildErrors buildErrors)
   pure finalDocs
 
--- | Applies a layout (i.e. a 'Macro') to a 'Document'
+-- | Applies a layout (i.e. a 'Macro') to a 'Document.Document'
 build :: [Layout] -> [Macro] -> File Document -> Either BuildError (File [Content])
 build ls ms (File p doc) = File p <$> applyMacros doc
   where
@@ -52,12 +48,11 @@ build ls ms (File p doc) = File p <$> applyMacros doc
     toEither (Just x) = Right x
     toEither Nothing  = Left (NoLayoutFound p)
 
--- | Writes the HTML of a list of 'Content' into a specific directory
+-- | Writes the HTML of a list of 'Document.Content' into a specific directory
 renderFile :: FilePath -> File [Content] -> IO ()
 renderFile dir (File path stuff) = save dir "html" (File path (render $ toHtml stuff))
 
------------- Utilities
-
+-- | Separates a list of @[Either a b]@ into @([a], [b])@
 separateErrors :: [Either a b] -> ([a], [b])
 separateErrors = bimap reverse reverse . foldl' accum ([], [])
   where

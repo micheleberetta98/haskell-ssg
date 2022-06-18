@@ -14,7 +14,8 @@ import           Data.Maybe
 import           Data.Text  (Text)
 import           Document
 
------------- Custom types
+------------------------------------------------------------------------------------
+-- * Custom types
 
 -- | A 'Macro' is defined by a name and some @body@
 -- which is the stuff that will be substitued every time
@@ -24,14 +25,18 @@ import           Document
 data Macro = Macro { macroName :: Text , macroBody :: [Content] }
   deriving (Show, Eq)
 
------------- Macro expansion
+-- | A useful alias.
+type Layout = Macro
 
--- | Applies the first 'Macro' in @macros@ that has the same
--- name as the layout in the 'Document', with the default parameters
+------------------------------------------------------------------------------------
+-- * Macro expansion
+
+-- | Applies the first 'Layout' in @layouts@ that has the same
+-- name as the layout in the 'Document.Document', with the default parameters
 -- of /pageTitle/ and /content/.
-applyLayout :: [Macro] -> Document -> Maybe [Content]
-applyLayout macros (Document config content) =
-  expand <$> find (hasName layoutName) macros <*> pure
+applyLayout :: [Layout] -> Document -> Maybe [Content]
+applyLayout layouts (Document config content) =
+  expand <$> find (hasName layoutName) layouts <*> pure
       [ MacroCall layoutName
         [ MacroArg "pageTitle" [String (pageTitle config)]
         , MacroArg "customCss" [String (fromMaybe "" (configCustomCss config))]
@@ -52,11 +57,11 @@ expandAll macros = fix (foldl' (flip expand))
       where
         content' = f content macros
 
--- | Expands a single 'Macro' over a list of 'Content'
+-- | Expands a single 'Macro' over a list of 'Document.Content'.
 expand :: Macro -> [Content] -> [Content]
 expand m = concatMap (expandMacroCall m)
 
--- | Expands a single 'Macro' when encountering a 'MacroCall'
+-- | Expands a single 'Macro' when encountering a 'MacroCall'.
 expandMacroCall :: Macro -> Content -> [Content]
 expandMacroCall m@(Macro n body) (MacroCall name params)
   | n == name                            = expand m (substitute params body)
@@ -64,9 +69,10 @@ expandMacroCall m@(Macro n body) (MacroCall name params)
 expandMacroCall m (List name attrs body) = [List name attrs (expand m body)]
 expandMacroCall _ x                      = [x]
 
------------- Substitution
+------------------------------------------------------------------------------------
+-- * Substitution
 
--- | Substitute all 'Unquote' with the corresponding parameter in a list of 'Content'.
+-- | Substitute all 'Unquote's with the corresponding parameter in a list of 'Document.Content'.
 substitute :: [MacroArg] -> [Content] -> [Content]
 substitute params = concat . mapMaybe substitute'
   where
@@ -85,13 +91,14 @@ substituteAttrs params (AttrList as) = AttrList (mapMaybe substituteAttrs' as)
     convert [Unquote x] = Just (AUnquote x)
     convert _           = Nothing
 
------------- Utils
+------------------------------------------------------------------------------------
+-- * Utils
 
--- | Little utility that expands a 'Macro' inside the body of a 'MacroArg'
+-- | Little utility that expands a 'Macro' inside the body of a 'MacroArg'.
 expandMacroArgBody :: Macro -> MacroArg -> MacroArg
 expandMacroArgBody m (MacroArg arg content) = MacroArg arg (expand m content)
 
--- | Extracts the content of a 'MacroArg' given a name
+-- | Extracts the content of a 'MacroArg' given a name.
 getMacroParam :: Text -> [MacroArg] -> Maybe [Content]
 getMacroParam name params = getBody <$> find hasName params
   where
