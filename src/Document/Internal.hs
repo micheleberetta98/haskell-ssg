@@ -49,7 +49,14 @@ data MacroArg = MacroArg Text [Content]
   deriving (Show, Eq)
 
 -- | A list of attributes, represented as tuples.
-type AttrList = [(Text, Content)]
+newtype AttrList = AttrList [(Text, AttrPairValue)]
+  deriving (Show, Eq)
+
+-- | Possible values for the value of an attribute list's pair
+data AttrPairValue
+  = AString Text
+  | AUnquote Text
+  deriving (Show, Eq)
 
 ------------ Html conversion
 
@@ -91,16 +98,16 @@ tagMapping = M.fromList
 
 -- | A tag with some content.
 tag :: (Html -> Html) -> HtmlMapping
-tag t as = foldl' (H.!) t (mapMaybe toAttr as)
+tag t (AttrList as) = foldl' (H.!) t (mapMaybe toAttr as)
 
 -- | A tag without content.
 tag' :: Html -> HtmlMapping
-tag' t as _ = foldl' (H.!) t (mapMaybe toAttr as)
+tag' t (AttrList as) _ = foldl' (H.!) t (mapMaybe toAttr as)
 
 -- | Converts a tuple into an 'Attribute'.
-toAttr :: (Text, Content) -> Maybe Attribute
-toAttr (k, String v) = M.lookup k attrs <*> pure (fromString (T.unpack v))
-toAttr _             = Nothing
+toAttr :: (Text, AttrPairValue) -> Maybe Attribute
+toAttr (k, AString v) = M.lookup k attrs <*> pure (fromString (T.unpack v))
+toAttr _              = Nothing
 
 -- | The possible attribute names.
 defaultAttrNames :: [Text]

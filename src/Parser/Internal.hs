@@ -124,16 +124,16 @@ listOrMacro = parens "(" ")" $ do
     if isMacro
       then MacroCall id <$> many macroArg <?> "macro parameters"
       else do
-        attrs <- option [] attrList <?> "list's attributes"
+        attrs <- option (AttrList []) attrList <?> "list's attributes"
         body <- many content <?> "list body"
         isList <- lift (isValidListName id)
         if isList
           then pure (List id attrs body)
-          else invalidListNameAt o id >> pure (List "" [] [])
+          else invalidListNameAt o id >> pure (List "" (AttrList []) [])
 
 -- | Parses an 'Unquote', composed of @\@@ followed by an 'identifier'.
 unquote :: Parser Content
-unquote = Unquote <$> (char '@' *> identifier) <?> "an unquote (@)"
+unquote = Unquote <$> (unquoteToken *> identifier) <?> "an unquote (@)"
 
 -- | Parses a 'Document.String' in the form of @\"anything goes\"@.
 -- Newlines are permitted.
@@ -150,27 +150,37 @@ macroArg = parens "(" ")" $
   <$> (identifier <?> "parameter's name")
   <*> many content
 
------------- Utils
+------------ Attribute lists
 
 -- | An 'AttrList' is in the form of @[(param \"value") ...]@.
 -- This is a recoverable parser, and in case of an error it will consume all inputs
 -- until a single @)@ is encountered.
 attrList :: Parser AttrList
-attrList = parens "[" "]" $ many $ recover (tuple <?> "a key-value tuple")
+attrList = AttrList <$> (parens "[" "]" $ many $ recover (tuple <?> "a key-value tuple"))
   where
     tuple = parens "(" ")" $ do
       o <- getOffset
       key <- identifier <?> "a key"
-      value <- option (String "") (contentString <|> unquote) <?> "a string literal or an unquote"
+      value <- option (AString "") (attrPairString <|> attrPairUnquote) <?> "a string literal or an unquote"
       isAttrName <- lift (isValidAttrName key)
       if isAttrName
         then pure (key, value)
-        else region (setErrorOffset o) $ invalidAttrNameAt o key >> pure ("", String "")
+        else region (setErrorOffset o) $ invalidAttrNameAt o key >> pure ("", AString "")
     recover = withRecovery $ \e -> do
       registerParseError e
       void $ some (noneOf specialChars)
       void $ oneOf specialChars
-      pure ("", String "")
+      pure ("", AString "")
+
+-- | A parser for a string literal in the context of attribute lists
+attrPairString :: Parser AttrPairValue
+attrPairString = AString <$> stringedLiteral <?> "a string literal"
+
+-- | A parser for an unquote in the context of attribute lists
+attrPairUnquote :: Parser AttrPairValue
+attrPairUnquote = AUnquote <$> (unquoteToken *> identifier) <?> "an unquote (@)"
+
+------------ Utils
 
 -- | A 'stringedLiteral' is some 'Text' between two @\"@ characters.
 -- It can be empty.
@@ -182,6 +192,10 @@ stringedLiteral = between (char '"') (symbol "\"") $
       , anySingleBut '\"'
       ]
     )
+
+-- | The token that marks the beginning of an unquote
+unquoteToken :: Parser Char
+unquoteToken = char '@'
 
 -- | An 'identifier' is some 'Text' with no 'specialChars' and cannot be empty.
 identifier :: Parser Text

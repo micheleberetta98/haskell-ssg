@@ -74,12 +74,16 @@ substitute params = concat . mapMaybe substitute'
     substitute' (List h attrs rest) = Just [List h (substituteAttrs params attrs) (substitute params rest)]
     substitute' x                   = Just [x]
 
--- | Substitute all 'Unquote' with the corresponding parameter in an 'AttrList'.
+-- | Substitute all 'AUnquote' with the corresponding parameter in an 'AttrList'.
 substituteAttrs :: [MacroArg] -> AttrList -> AttrList
-substituteAttrs params = mapMaybe substituteAttrs'
+substituteAttrs params (AttrList as) = AttrList (mapMaybe substituteAttrs' as)
   where
-    substituteAttrs' (k, Unquote x) = (k,) <$> (getMacroParam x params >>= listToMaybe)
+    substituteAttrs' (k, AUnquote x) = (k,) <$> (getMacroParam x params >>= convert)
     substituteAttrs' (k, x)         = Just (k, x)
+
+    convert [String s]  = Just (AString s)
+    convert [Unquote x] = Just (AUnquote x)
+    convert _           = Nothing
 
 ------------ Utils
 
