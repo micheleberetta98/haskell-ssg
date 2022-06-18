@@ -1,3 +1,10 @@
+{-|
+  Module      : Parsing
+  Description : Parsing of source files
+
+  This modules deals with parsing source files and building all the internal
+  representations.
+-}
 module Parsing (parse, NoParse) where
 
 import           Control.Exception

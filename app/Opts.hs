@@ -1,3 +1,10 @@
+{-|
+  Module      : Opts
+  Description : CLI options management
+
+  Here is defined the 'Options' type, which includes all command line arguments
+  that specify all the necessary folders.
+-}
 module Opts
   ( Options(..)
   , getOpts

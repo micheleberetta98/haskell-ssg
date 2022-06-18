@@ -1,3 +1,10 @@
+{-|
+  Module      : File
+  Description : Files management
+
+  This modules offers utility functions for copying directories, running a function
+  on all files in a directory, and so on.
+-}
 module File where
 
 import           Control.Monad.Trans

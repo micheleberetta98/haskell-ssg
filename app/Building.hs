@@ -2,10 +2,9 @@
 
 {-|
   Module      : Building
-  Description : Source file management
+  Description : Creation of output data
 
-  This modules deals with copying and building source files, which can be macros, documents
-  or some static assets.
+  This modules applies macros and layouts in order to obtain renderable data.
 -}
 module Building
   ( BuildError
