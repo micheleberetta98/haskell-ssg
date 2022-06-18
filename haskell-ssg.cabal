@@ -61,6 +61,7 @@ test-suite haskell-ssg-test
     hs-source-dirs:   test
     other-modules:    ParserSpec
                     , MacroSpec
+                    , DocumentSpec
     ghc-options:      -threaded -rtsopts -with-rtsopts=-N
     build-depends:    base ^>=4.16.1.0
                     , haskell-ssg

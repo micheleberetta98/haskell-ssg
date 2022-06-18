@@ -10,6 +10,7 @@ import           Parser.Env
 import           Parser.Internal
 import           Test.Hspec
 import           Test.Hspec.Megaparsec
+import           Text.Megaparsec
 
 parseWith :: Env -> Parser a -> Text -> Either ParserError a
 parseWith env p = parseWithEnv env p ""
@@ -80,6 +81,7 @@ parserSpec =
     it "can parse multiple macros updating the environment" $ do
       parse (macro *> listOrMacro) "'(new-macro) (new-macro)" `shouldParse` MacroCall "new-macro" []
       parse (listOrMacro <* macro) "(new-macro) '(new-macro)" `shouldSatisfy` isLeft
+      parse (many macro *> many listOrMacro) "'(new-macro) '(another-one) (new-macro) (another-one)" `shouldParse` [MacroCall "new-macro" [], MacroCall "another-one" []]
 
     it "should parse attribute lists" $ do
       parse attrList "[(class \"red\") (required)]" `shouldParse` [("class", String "red"), ("required", String "")]
