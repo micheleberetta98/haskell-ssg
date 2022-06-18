@@ -15,8 +15,8 @@ import           Data.Maybe
 import           Data.String
 import           Data.Text                   (Text)
 import qualified Data.Text                   as T
-import           Text.Blaze.Html5            (Attribute, AttributeValue, Html)
 import qualified Text.Blaze.Html5            as H
+import           Text.Blaze.Html5            (Attribute, AttributeValue, Html)
 import qualified Text.Blaze.Html5.Attributes as A
 import           ToHtml
 
@@ -39,8 +39,13 @@ data Config = Config
 -- | A 'Content' is essentialy a list or a single element ('Unquote' or 'Document.Internal.String').
 data Content
   = List Text AttrList [Content]
+  | MacroCall Text [MacroArg]
   | Unquote Text
   | String Text
+  deriving (Show, Eq)
+
+-- | A utility type for representing macro arguments
+data MacroArg = MacroArg Text [Content]
   deriving (Show, Eq)
 
 -- | A list of attributes, represented as tuples.

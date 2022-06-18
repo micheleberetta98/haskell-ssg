@@ -13,6 +13,7 @@ module Document
   , Config(..)
   , Content(..)
   , AttrList
+  , MacroArg(..)
   )
 where
 
