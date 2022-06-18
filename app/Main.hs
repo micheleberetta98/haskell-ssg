@@ -47,7 +47,8 @@ loop s = do
   cmd <- getLine
   if | cmd `elem` ["q", "quit"]   -> kill s >> pure ()
      | cmd `elem` ["r", "reload"] -> parseAndBuild >> reload s >>= loop
-     | otherwise                  -> putStrLn "No such command: try reload or quit" >> loop s
+     | cmd `elem` ["h", "help"]   -> putStrLn "Available commands: r/reload, q/quit, h/help" >> loop s
+     | otherwise                  -> putStrLn "No such command: use h or help" >> loop s
 
 ------------ Parsing
 
