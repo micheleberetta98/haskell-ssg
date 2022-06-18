@@ -24,9 +24,6 @@ import           Document
 data Macro = Macro { macroName :: Text , macroBody :: [Content] }
   deriving (Show, Eq)
 
--- | A little utility type to represent macro params.
-type MacroParams = [(Text, [Content])]
-
 ------------ Macro expansion
 
 -- | Applies the first 'Macro' in @macros@ that has the same
@@ -35,10 +32,10 @@ type MacroParams = [(Text, [Content])]
 applyLayout :: [Macro] -> Document -> Maybe [Content]
 applyLayout macros (Document config content) =
   expand <$> find (hasName layoutName) macros <*> pure
-      [ List layoutName []
-        [ List "pageTitle" [] [String (pageTitle config)]
-        , List "customCss" [] [String (fromMaybe "" (configCustomCss config))]
-        , List "content" [] content
+      [ MacroCall layoutName
+        [ MacroArg "pageTitle" [String (pageTitle config)]
+        , MacroArg "customCss" [String (fromMaybe "" (configCustomCss config))]
+        , MacroArg "content" content
         ]
       ]
   where
@@ -55,39 +52,44 @@ expandAll macros = fix (foldl' (flip expand))
       where
         content' = f content macros
 
-
--- | Expands a single macro over a list of 'Document.Content'.
+-- | Expands a single 'Macro' over a list of 'Content'
 expand :: Macro -> [Content] -> [Content]
-expand m@(Macro n body) = concatMap expand'
-  where
-    expand' (List h attrs rest)
-      | h == n    = expand m (substitute params body)
-      | otherwise = [List h (substituteAttrs params attrs) (expand m rest)]
-      where params = buildParams rest
-    expand' x     = [x]
+expand m = concatMap (expandMacroCall m)
+
+-- | Expands a single 'Macro' when encountering a 'MacroCall'
+expandMacroCall :: Macro -> Content -> [Content]
+expandMacroCall m@(Macro n body) (MacroCall name params)
+  | n == name                            = expand m (substitute params body)
+  | otherwise                            = [MacroCall name $ map (expandMacroArgBody m) params]
+expandMacroCall m (List name attrs body) = [List name attrs (expand m body)]
+expandMacroCall _ x                      = [x]
 
 ------------ Substitution
 
 -- | Substitute all 'Unquote' with the corresponding parameter in a list of 'Content'.
-substitute :: MacroParams -> [Content] -> [Content]
+substitute :: [MacroArg] -> [Content] -> [Content]
 substitute params = concat . mapMaybe substitute'
   where
-    substitute' (Unquote x)         = lookup x params
+    substitute' (Unquote x)         = getMacroParam x params
     substitute' (List h attrs rest) = Just [List h (substituteAttrs params attrs) (substitute params rest)]
     substitute' x                   = Just [x]
 
 -- | Substitute all 'Unquote' with the corresponding parameter in an 'AttrList'.
-substituteAttrs :: MacroParams -> AttrList -> AttrList
+substituteAttrs :: [MacroArg] -> AttrList -> AttrList
 substituteAttrs params = mapMaybe substituteAttrs'
   where
-    substituteAttrs' (k, Unquote x) = (k,) <$> (lookup x params >>= listToMaybe)
+    substituteAttrs' (k, Unquote x) = (k,) <$> (getMacroParam x params >>= listToMaybe)
     substituteAttrs' (k, x)         = Just (k, x)
 
 ------------ Utils
 
--- | Builds the 'MacroParams' data structure from the body.
--- of a macro
-buildParams :: [Content] -> MacroParams
-buildParams = mapMaybe $ \case
-    (List h _ rest) -> Just (h, rest)
-    _               -> Nothing
+-- | Little utility that expands a 'Macro' inside the body of a 'MacroArg'
+expandMacroArgBody :: Macro -> MacroArg -> MacroArg
+expandMacroArgBody m (MacroArg arg content) = MacroArg arg (expand m content)
+
+-- | Extracts the content of a 'MacroArg' given a name
+getMacroParam :: Text -> [MacroArg] -> Maybe [Content]
+getMacroParam name params = getBody <$> find hasName params
+  where
+    getBody (MacroArg _ body) = body
+    hasName(MacroArg n _) = n == name
