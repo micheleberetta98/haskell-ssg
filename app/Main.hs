@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiWayIf #-}
+
 module Main where
 
 import           Control.Monad.State
@@ -8,19 +10,30 @@ import           Files
 import           Macro               (Layout, Macro)
 import           Opts                (Options (..), getOpts)
 import           Parser              (ParserError, defaultEnv, prettifyError)
-import           Server              (serve)
+import           Server              (Server, kill, reload, serve)
 import           System.Exit         (exitFailure)
-import           System.IO           (hPutStrLn, stderr)
+import           System.IO           (hFlush, hPutStrLn, stderr, stdout)
 
 type WithError = Either ParserError
 
 main :: IO ()
-main = do
-  parse
-    >>= buildFiles
-    >>= saveFiles
+main =
+  parseAndBuild
+  >> getOpts
+  >>= serve . buildFolder
+  >>= loop
 
-  getOpts >>= serve . buildFolder
+parseAndBuild :: IO ()
+parseAndBuild = parse >>= buildFiles >>= saveFiles
+
+loop :: Server -> IO ()
+loop s = do
+  putStr "> "
+  hFlush stdout
+  cmd <- getLine
+  if | cmd `elem` ["q", "quit"]   -> kill s >> pure ()
+     | cmd `elem` ["r", "reload"] -> parseAndBuild >> reload s >>= loop
+     | otherwise                  -> putStrLn "No such command: try reload or quit" >> loop s
 
 ------------ Parsing
 
