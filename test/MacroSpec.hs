@@ -6,7 +6,7 @@ import           Test.Hspec
 
 macroSpec :: SpecWith ()
 macroSpec =
-  let l n = List n []
+  let l n = List n (AttrList [])
       l_ n = l n []
   in
   describe "Macro" $ do
@@ -18,7 +18,7 @@ macroSpec =
       substitute params [Unquote "param2"] `shouldBe` [String "goodbye"]
       substitute params [l "nl" []] `shouldBe` [l "nl" []]
       substitute params [l "p" [Unquote "param1", Unquote "__"]] `shouldBe` [l "p" [String "hello"]]
-      substitute params [l "p" [l_ "div", List "div" [] [Unquote "param2"]]] `shouldBe` [l "p" [l_ "div", l "div" [String "goodbye"]]]
+      substitute params [l "p" [l_ "div", l "div" [Unquote "param2"]]] `shouldBe` [l "p" [l_ "div", l "div" [String "goodbye"]]]
 
     it "should expand in documents' content" $ do
       let m1 = Macro "m1" [l_ "div", l "p" [Unquote "content"]]
@@ -32,32 +32,32 @@ macroSpec =
       expand m2 [doc2] `shouldBe` [l "p" [String "content1", String "content2", l "nl" [], String "hello"]]
 
     it "should expand in a list's attrlist" $ do
-      let m = Macro "*macro*" [List "div" [("class", Unquote "class")] [Unquote "content"]]
+      let m = Macro "*macro*" [List "div" (AttrList [("class", AUnquote "class")]) [Unquote "content"]]
       let doc = MacroCall "*macro*"
             [ MacroArg "content" [String "content1", String "content2"]
             , MacroArg "class" [String "red"]
             ]
 
-      expand m [doc] `shouldBe` [List "div" [("class", String "red")] [String "content1", String "content2"]]
+      expand m [doc] `shouldBe` [List "div" (AttrList [("class", AString "red")]) [String "content1", String "content2"]]
 
     it "should expand multiple macros" $ do
       let m1 = Macro "*M1*" [ List "div"
-                              [("class", String "rounded"), ("style", Unquote "style")]
+                              (AttrList [("class", AString "rounded"), ("style", AUnquote "style")])
                               [Unquote "content"]
                             ]
 
-          m2 = Macro "*M2*" [List "p" [] [Unquote "content", List "section" [] [Unquote "content"], String "hello"]]
+          m2 = Macro "*M2*" [l "p" [Unquote "content", l "section" [Unquote "content"], String "hello"]]
 
       let doc = [ MacroCall "*M1*" [MacroArg "style" [String "beautiful"], MacroArg "content" [String "macro 1 content"]]
                 , MacroCall "*M2*" [MacroArg "content" [String "macro 2 content"]]]
 
       expandAll [m1, m2] doc `shouldBe`
         [ List "div"
-          [("class", String "rounded"), ("style", String "beautiful")]
+          (AttrList [("class", AString "rounded"), ("style", AString "beautiful")])
           [String "macro 1 content"]
-        , List "p" []
+        , l "p"
           [ String "macro 2 content"
-          , List "section" [] [String "macro 2 content"]
+          , l "section" [String "macro 2 content"]
           , String "hello"
           ]
         ]
@@ -75,6 +75,6 @@ macroSpec =
 
     it "should expand recursively" $ do
       let m = Macro "MACRO" [Unquote "content"]
-          doc = [List "div" [] [MacroCall "MACRO" [MacroArg "content" [String "Hello"]]]]
+          doc = [l "div" [MacroCall "MACRO" [MacroArg "content" [String "Hello"]]]]
 
-      expandAll [m] doc `shouldBe` [List "div" [] [String "Hello"]]
+      expandAll [m] doc `shouldBe` [l "div" [String "Hello"]]

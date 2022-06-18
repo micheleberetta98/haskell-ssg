@@ -60,11 +60,11 @@ parserSpec =
       parse unquote "not@valid" `shouldSatisfy` isLeft
 
     it "should parse lists" $ do
-      parse listOrMacro "(nl)" `shouldParse` List "nl" [] []
-      parse listOrMacro "(b \"string content\")" `shouldParse` List "b" [] [String "string content"]
-      parse listOrMacro "(a (b (c @d)))" `shouldParse` List "a" [] [List "b" [] [List "c" [] [Unquote "d"]]]
-      parse listOrMacro "(b\n    \"string content\"\n    (i \"nested\"))" `shouldParse` List "b" [] [String "string content", List "i" [] [String "nested"]]
-      parse listOrMacro "(par [(class \"red\")] (nl))" `shouldParse` List "par" [("class", String "red")] [List "nl" [] []]
+      parse listOrMacro "(nl)" `shouldParse` List "nl" (AttrList []) []
+      parse listOrMacro "(b \"string content\")" `shouldParse` List "b" (AttrList []) [String "string content"]
+      parse listOrMacro "(a (b (c @d)))" `shouldParse` List "a" (AttrList []) [List "b" (AttrList []) [List "c" (AttrList []) [Unquote "d"]]]
+      parse listOrMacro "(b\n    \"string content\"\n    (i \"nested\"))" `shouldParse` List "b" (AttrList []) [String "string content", List "i" (AttrList []) [String "nested"]]
+      parse listOrMacro "(par [(class \"red\")] (nl))" `shouldParse` List "par" (AttrList [("class", AString "red")]) [List "nl" (AttrList []) []]
       parse listOrMacro "()" `shouldSatisfy` isLeft
       parse listOrMacro "[nl]" `shouldSatisfy` isLeft
       parse listOrMacro "(nl [class red])" `shouldSatisfy` isLeft
@@ -82,9 +82,9 @@ parserSpec =
       parse (many macro *> many listOrMacro) "'(new-macro) '(another-one) (new-macro) (another-one)" `shouldParse` [MacroCall "new-macro" [], MacroCall "another-one" []]
 
     it "should parse attribute lists" $ do
-      parse attrList "[(class \"red\") (required)]" `shouldParse` [("class", String "red"), ("required", String "")]
-      parse attrList "[(class \"red\") (href @linkValue)]" `shouldParse` [("class", String "red"), ("href", Unquote "linkValue")]
-      parse attrList "[]" `shouldParse` []
+      parse attrList "[(class \"red\") (required)]" `shouldParse` (AttrList [("class", AString "red"), ("required", AString "")])
+      parse attrList "[(class \"red\") (href @linkValue)]" `shouldParse` (AttrList [("class", AString "red"), ("href", AUnquote "linkValue")])
+      parse attrList "[]" `shouldParse` (AttrList [])
       parse attrList "[(class (nl))]" `shouldSatisfy` isLeft
       parse attrList "[()]" `shouldSatisfy` isLeft
       parse attrList "[(class ?a)]" `shouldSatisfy` isLeft
