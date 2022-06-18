@@ -74,16 +74,14 @@ document = Document <$> config <*> many content
 -- | Parses a 'Macro' in the form @(macro \<id\> \<body\>)@,
 -- where id is an 'identifier' and body is zero or more 'content'.
 macro :: Parser Macro
-macro = do
-  void (char '\'')
-  parens "(" ")" $ do
-    o <- getOffset
-    id <- identifier <?> "macro name"
-    body <- many content <?> "macro body"
-    nameTaken <- lift (isNameTaken id)
-    if nameTaken
-      then idAlreadyTakenAt o id >> pure (Macro "" [])
-      else lift (addMacroName id) >> pure (Macro id body)
+macro = parens "'(" ")" $ do
+  o <- getOffset
+  id <- identifier <?> "macro name"
+  body <- many content <?> "macro body"
+  nameTaken <- lift (isNameTaken id)
+  if nameTaken
+    then idAlreadyTakenAt o id >> pure (Macro "" [])
+    else lift (addMacroName id) >> pure (Macro id body)
 
 -- | Little utility for parsing multime macros
 macros :: Parser [Macro]
@@ -124,7 +122,7 @@ listOrMacro = parens "(" ")" $ do
     if isMacro
       then MacroCall id <$> many macroArg <?> "macro parameters"
       else do
-        attrs <- option (AttrList []) attrList <?> "list's attributes"
+        attrs <- option (AttrList []) attrList <?> "attribute list"
         body <- many content <?> "list body"
         isList <- lift (isValidListName id)
         if isList

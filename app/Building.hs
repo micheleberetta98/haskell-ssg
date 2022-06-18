@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-
 {-|
   Module      : Building
   Description : Creation of output data

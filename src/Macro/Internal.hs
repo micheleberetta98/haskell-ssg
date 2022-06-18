@@ -79,7 +79,7 @@ substituteAttrs :: [MacroArg] -> AttrList -> AttrList
 substituteAttrs params (AttrList as) = AttrList (mapMaybe substituteAttrs' as)
   where
     substituteAttrs' (k, AUnquote x) = (k,) <$> (getMacroParam x params >>= convert)
-    substituteAttrs' (k, x)         = Just (k, x)
+    substituteAttrs' (k, x)          = Just (k, x)
 
     convert [String s]  = Just (AString s)
     convert [Unquote x] = Just (AUnquote x)

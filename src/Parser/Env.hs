@@ -13,8 +13,6 @@ import qualified Data.Set            as S
 import           Data.Text           (Text)
 import           Document.Internal   (defaultAttrNames, defaultListNames)
 
-type WithEnv = StateT Env
-
 -- | The 'Parser' environment.
 data Env = Env
   { validListNames :: Set Text
