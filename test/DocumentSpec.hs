@@ -1,11 +1,7 @@
 module DocumentSpec (documentSpec) where
 
-import           Data.Either
-import           Data.Text
 import           Document
 import           Macro.Internal
-import           Parser
-import           Parser.Env
 import           Test.Hspec
 import           Text.Megaparsec (many)
 

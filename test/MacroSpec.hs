@@ -1,11 +1,8 @@
 module MacroSpec (macroSpec) where
 
-import           Data.Either
 import           Document
 import           Macro.Internal
 import           Test.Hspec
-import           Test.Hspec.Megaparsec
-import           Text.Megaparsec
 
 macroSpec :: SpecWith ()
 macroSpec =

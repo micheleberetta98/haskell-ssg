@@ -5,8 +5,6 @@ import           Data.Text             (Text)
 import           Document
 import           Macro
 import           Parser
-import           Parser                (parseWithEnv)
-import           Parser.Env
 import           Parser.Internal
 import           Test.Hspec
 import           Test.Hspec.Megaparsec
@@ -52,7 +50,7 @@ parserSpec =
       parse macro "'(hi)" `shouldParse` Macro "hi" []
       parse macro "'(#)" `shouldParse` Macro "#" []
 
-    it "cannot definte twice the same macro" $ do
+    it "cannot define twice the same macro" $ do
       parse macro "'(already-existing-macro)" `shouldSatisfy` isLeft
 
     it "should parse unquoted stuff" $ do
