@@ -25,7 +25,6 @@ import           Macro
 import           Parser
 import           System.Directory
 import           System.FilePath
-import           Text.Megaparsec     (MonadParsec (eof), parse)
 import           ToHtml
 
 ------------ Types and instances
@@ -80,10 +79,7 @@ copyAssets from to = do
 
 -- | Parses all 'Macro's in a directory
 parseMacros :: FilePath -> StateT Env IO [Either ParserError Macro]
-parseMacros path = parseDir macro path $ const $
-  \case
-    Left e  -> pure [Left e]
-    Right m -> modify' (addMacroName (macroName m)) >> pure [Right m]
+parseMacros path = parseDir macro path $ const $ \x -> pure [x]
 
 -- | Parses all 'Document's in a directory
 parseSrc :: FilePath -> StateT Env IO [Either ParserError (File Document)]
@@ -93,14 +89,14 @@ parseSrc path = parseDir document path $ \p doc -> pure [File p <$> doc]
 
 -- | Runs a parser against all files in a directory (subdirectories included),
 -- also allowing to keep an environment across all calls
-parseDir :: (Env -> Parser a)                               -- ^ A function to get the parser given an environment
-            -> FilePath                                     -- ^ The directory containing the files
+parseDir :: Parser a                                                    -- ^ A function to get the parser given an environment
+            -> FilePath                                                 -- ^ The directory containing the files
             -> (FilePath -> Either ParserError a -> StateT Env IO [b])  -- ^ What to do with the parser result on a single file
             -> StateT Env IO [b]
 parseDir parser path k = do
   isFile <- liftIO (doesFileExist path)
   if isFile
-    then get >>= liftIO . parseWithEnv parser path >>= k path
+    then parse parser path >>= k path
     else do
       ps <- liftIO (listDirectory path)
       concat <$> mapM parseSubDir ps
@@ -108,5 +104,6 @@ parseDir parser path k = do
     parseSubDir p = parseDir parser (path </> p) k
 
 -- | Little utility that parses a file with a specific 'Parser' and 'Env'
-parseWithEnv :: (Env -> Parser a) -> FilePath -> Env -> IO (Either ParserError a)
-parseWithEnv parser path env = parse (parser env <* eof) path <$> T.readFile path
+-- parse :: Parser a -> FilePath -> IO (Either ParserError a)
+parse :: Parser a -> FilePath -> StateT Env IO (Either ParserError a)
+parse parser path = lift (T.readFile path) >>= runParser parser path

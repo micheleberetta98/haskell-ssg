@@ -7,11 +7,10 @@ import           Document            (Content, Document)
 import           Files
 import           Macro               (Layout, Macro)
 import           Opts                (Options (..), getOpts)
-import           Parser              (ParserError, defaultEnv)
+import           Parser              (ParserError, defaultEnv, prettifyError)
 import           Server              (serve)
 import           System.Exit         (exitFailure)
 import           System.IO           (hPutStrLn, stderr)
-import           Text.Megaparsec     (errorBundlePretty)
 
 type WithError = Either ParserError
 
@@ -32,7 +31,7 @@ parse = do
       (layoutErrors, layouts') = separateErrors layouts
       (fileErrors, docs')      = separateErrors docs
 
-  panicIfErrors (macroErrors <> layoutErrors <> fileErrors) errorBundlePretty
+  panicIfErrors (macroErrors <> layoutErrors <> fileErrors) prettifyError
   pure (layouts', macros', docs')
 
 getMacrosAndDocuments :: IO ([WithError Layout], [WithError Macro], [WithError (File Document)])
