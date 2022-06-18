@@ -42,9 +42,9 @@ instance Show BuildError where
 
 -- | Applies a layout (i.e. a 'Macro') to a 'Document'
 build :: [Layout] -> [Macro] -> File Document -> Either BuildError (File [Content])
-build layouts macros (File p doc) = File p <$> toEither (applyMacros doc)
+build ls ms (File p doc) = File p <$> toEither (applyMacros doc)
   where
-    applyMacros = fmap (expandAll macros) . applyLayout layouts
+    applyMacros = fmap (expandAll ms) . applyLayout ls
     toEither (Just x) = Right x
     toEither Nothing  = Left (NoLayoutFound p)
 
@@ -78,8 +78,8 @@ copyAssets from to = do
 ------------ Parsing of layouts and src files
 
 -- | Parses all 'Macro's in a directory
-parseMacros :: FilePath -> StateT Env IO [Either ParserError Macro]
-parseMacros path = parseDir macro path $ const $ \x -> pure [x]
+parseMacros :: FilePath -> StateT Env IO [Either ParserError [Macro]]
+parseMacros path = parseDir macros path $ const $ \x -> pure [x]
 
 -- | Parses all 'Document's in a directory
 parseSrc :: FilePath -> StateT Env IO [Either ParserError (File Document)]

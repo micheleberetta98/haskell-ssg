@@ -32,9 +32,9 @@ parse = do
       (fileErrors, docs')      = separateErrors docs
 
   panicIfErrors (macroErrors <> layoutErrors <> fileErrors) prettifyError
-  pure (layouts', macros', docs')
+  pure (concat layouts', concat macros', docs')
 
-getMacrosAndDocuments :: IO ([WithError Layout], [WithError Macro], [WithError (File Document)])
+getMacrosAndDocuments :: IO ([WithError [Layout]], [WithError [Macro]], [WithError (File Document)])
 getMacrosAndDocuments = flip evalStateT defaultEnv $ do
   opts <- lift getOpts
   lift (putStrLn "Reading macros...")

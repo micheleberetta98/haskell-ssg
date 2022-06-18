@@ -10,6 +10,7 @@ module Parser
   , Env
   , document
   , macro
+  , macros
   , mkEnv
   , addMacroName
   , defaultEnv

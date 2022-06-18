@@ -85,6 +85,10 @@ macro = do
       then idAlreadyTakenAt o id >> pure (Macro "" [])
       else lift (addMacroName id) >> pure (Macro id body)
 
+-- | Little utility for parsing multime macros
+macros :: Parser [Macro]
+macros = many macro
+
 -- | Parses a document 'Config' in the form @{ key \"value\" }@.
 -- All key-value pairs are permutative and can appear in any order.
 config :: Parser Config
