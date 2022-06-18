@@ -1,7 +1,7 @@
 test: cabal-test
 
 build:
-	cabal build --ghc-options="-threaded -rtsopts -with-rtsopts=-N -O2"
+	cabal build
 
 run:
 	cabal run haskell-ssg -- _src

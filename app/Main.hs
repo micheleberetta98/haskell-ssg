@@ -2,19 +2,27 @@
 
 module Main where
 
-import           Control.Monad.State
-import           Data.Bifunctor
-import           Data.Foldable
+import           Control.Exception   (Exception, catch, throw)
+import           Control.Monad       (unless)
+import           Control.Monad.State (MonadTrans (lift), evalStateT)
+import           Data.Bifunctor      (Bifunctor (bimap))
+import           Data.Foldable       (Foldable (foldl'))
 import           Document            (Content, Document)
-import           Files
+import           Files               (BuildError, File, build, copyAssets,
+                                      parseMacros, parseSrc, save)
 import           Macro               (Layout, Macro)
 import           Opts                (Options (..), getOpts)
 import           Parser              (ParserError, defaultEnv, prettifyError)
 import           Server              (Server, kill, reload, serve)
-import           System.Exit         (exitFailure)
 import           System.IO           (hFlush, hPutStrLn, stderr, stdout)
 
 type WithError = Either ParserError
+
+-- | Custom data types for parsing and building errors
+data Errors = NoParse [ParserError] | BuildErrors [BuildError]
+  deriving (Show)
+
+instance Exception Errors
 
 main :: IO ()
 main =
@@ -24,7 +32,13 @@ main =
   >>= loop
 
 parseAndBuild :: IO ()
-parseAndBuild = parse >>= buildFiles >>= saveFiles
+parseAndBuild = do
+  ( parse
+    >>= buildFiles
+    >>= saveFiles )
+  `catch` \case
+    NoParse es     -> prettyPrintErrors es prettifyError
+    BuildErrors es -> prettyPrintErrors es show
 
 loop :: Server -> IO ()
 loop s = do
@@ -44,7 +58,11 @@ parse = do
       (layoutErrors, layouts') = separateErrors layouts
       (fileErrors, docs')      = separateErrors docs
 
-  panicIfErrors (macroErrors <> layoutErrors <> fileErrors) prettifyError
+      errors = macroErrors <> layoutErrors <> fileErrors
+
+  unless (null errors) $
+    throw (NoParse errors)
+
   pure (concat layouts', concat macros', docs')
 
 getMacrosAndDocuments :: IO ([WithError [Layout]], [WithError [Macro]], [WithError (File Document)])
@@ -62,7 +80,8 @@ getMacrosAndDocuments = flip evalStateT defaultEnv $ do
 buildFiles :: ([Layout], [Macro], [File Document]) -> IO [File [Content]]
 buildFiles (layouts, macros, docs) = do
   let (buildErrors, finalDocs) = separateErrors $ map (build layouts macros) docs
-  panicIfErrors buildErrors show
+  unless (null buildErrors) $
+    throw (BuildErrors buildErrors)
   pure finalDocs
 
 saveFiles :: [File [Content]]  -> IO ()
@@ -76,11 +95,8 @@ saveFiles docs = do
 
 ------------ Utilities
 
-panicIfErrors :: [a] -> (a -> String) -> IO ()
-panicIfErrors [] _     = pure ()
-panicIfErrors es toStr = do
-  mapM_ (hPutStrLn stderr . toStr) es
-  exitFailure
+prettyPrintErrors :: [a] -> (a -> String) -> IO ()
+prettyPrintErrors es toStr = mapM_ (hPutStrLn stderr . toStr) es
 
 separateErrors :: [Either a b] -> ([a], [b])
 separateErrors = bimap reverse reverse . foldl' accum ([], [])
