@@ -42,9 +42,9 @@ instance Show BuildError where
 
 -- | Applies a layout (i.e. a 'Macro') to a 'Document'
 build :: [Layout] -> [Macro] -> File Document -> Either BuildError (File [Content])
-build ls ms (File p doc) = File p <$> toEither (applyMacros doc)
+build ls ms (File p doc) = File p <$> applyMacros doc
   where
-    applyMacros = fmap (expandAll ms) . applyLayout ls
+    applyMacros = toEither . fmap (expandAll ms) . applyLayout ls
     toEither (Just x) = Right x
     toEither Nothing  = Left (NoLayoutFound p)
 
