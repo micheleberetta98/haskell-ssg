@@ -1,9 +1,11 @@
 import           Test.Hspec
 
-import           MacroSpec
-import           ParserSpec
+import           DocumentSpec (documentSpec)
+import           MacroSpec    (macroSpec)
+import           ParserSpec   (parserSpec)
 
 main = hspec $ do
   parserSpec
   macroSpec
+  documentSpec
 

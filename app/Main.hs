@@ -1,57 +1,50 @@
+{-# LANGUAGE MultiWayIf #-}
+
 module Main where
 
-import           Control.Monad.State
-import           Data.Bifunctor
-import           Data.Foldable
-import           Document            (Content, Document)
-import           Files
-import           Macro               (Layout, Macro)
-import           Opts                (Options (..), getOpts)
-import           Parser              (ParserError, defaultEnv)
-import           Server              (serve)
-import           System.Exit         (exitFailure)
-import           System.IO           (hPutStrLn, stderr)
-import           Text.Megaparsec     (errorBundlePretty)
+import           Building
+import           Control.Exception
+import           Document
+import           File
+import           Opts
+import           Parser
+import           Parsing
+import           Server
+import           System.IO
 
 type WithError = Either ParserError
 
+-- | Custom data types for parsing and building errors
+data Errors = NoParse [ParserError] | BuildErrors [BuildError]
+  deriving (Show)
+
+instance Exception Errors
+
 main :: IO ()
-main = do
-  parse
+main =
+  parseAndBuild
+  >> getOpts
+  >>= serve . buildFolder
+  >>= loop
+
+parseAndBuild :: IO ()
+parseAndBuild = do
+  ( parse
     >>= buildFiles
-    >>= saveFiles
+    >>= saveFiles )
+  `catch` \case
+    NoParse es     -> prettyPrintErrors es prettyParserError
+    BuildErrors es -> prettyPrintErrors es show
 
-  getOpts >>= serve . buildFolder
-
------------- Parsing
-
-parse :: IO ([Layout], [Macro], [File Document])
-parse = do
-  (layouts, macros, docs) <- getMacrosAndDocuments
-  let (macroErrors, macros')   = separateErrors macros
-      (layoutErrors, layouts') = separateErrors layouts
-      (fileErrors, docs')      = separateErrors docs
-
-  panicIfErrors (macroErrors <> layoutErrors <> fileErrors) errorBundlePretty
-  pure (layouts', macros', docs')
-
-getMacrosAndDocuments :: IO ([WithError Layout], [WithError Macro], [WithError (File Document)])
-getMacrosAndDocuments = flip evalStateT defaultEnv $ do
-  opts <- lift getOpts
-  lift (putStrLn "Reading macros...")
-  ls <- parseMacros (layoutsFolder opts)
-  ms <- parseMacros (macrosFolder opts)
-  lift (putStrLn "Reading source files...")
-  fs <- parseSrc (srcFolder opts)
-  pure (ls, ms, fs)
-
------------- Building
-
-buildFiles :: ([Layout], [Macro], [File Document]) -> IO [File [Content]]
-buildFiles (layouts, macros, docs) = do
-  let (buildErrors, finalDocs) = separateErrors $ map (build layouts macros) docs
-  panicIfErrors buildErrors show
-  pure finalDocs
+loop :: Server -> IO ()
+loop s = do
+  putStr "> "
+  hFlush stdout
+  cmd <- getLine
+  if | cmd `elem` ["q", "quit"]   -> kill s >> pure ()
+     | cmd `elem` ["r", "reload"] -> parseAndBuild >> reload s >>= loop
+     | cmd `elem` ["h", "help"]   -> putStrLn "Available commands: r/reload, q/quit, h/help" >> loop s
+     | otherwise                  -> putStrLn "No such command: use h or help" >> loop s
 
 saveFiles :: [File [Content]]  -> IO ()
 saveFiles docs = do
@@ -59,19 +52,8 @@ saveFiles docs = do
   assets <- staticFolder <$> getOpts
   outputAssets <- outputStaticFolder <$> getOpts
   putStrLn "Building..."
-  mapM_ (save output) docs
-  copyAssets assets outputAssets
+  mapM_ (renderFile output) docs
+  copyDir assets outputAssets
 
------------- Utilities
-
-panicIfErrors :: [a] -> (a -> String) -> IO ()
-panicIfErrors [] _     = pure ()
-panicIfErrors es toStr = do
-  mapM_ (hPutStrLn stderr . toStr) es
-  exitFailure
-
-separateErrors :: [Either a b] -> ([a], [b])
-separateErrors = bimap reverse reverse . foldl' accum ([], [])
-  where
-    accum (es, xs) (Left e)  = (e : es, xs)
-    accum (es, xs) (Right x) = (es, x : xs)
+prettyPrintErrors :: [a] -> (a -> String) -> IO ()
+prettyPrintErrors es toStr = mapM_ (hPutStrLn stderr . toStr) es

@@ -10,19 +10,9 @@ description:
     Haskell SSG is a static site generator written in Haskell. It defines its own language, inspired by
     LISP syntax, that strives to be minimal and lightweight. It also supports arbitrary macro expansion.
 
--- A URL where users can report bugs.
--- bug-reports:
-
--- The license under which the package is released.
--- license:
 author:             Beretta Michele
                   , Crippa Bianca
                   , Toure Pape Alpha
-
--- A copyright notice.
--- copyright:
--- category:
--- extra-source-files: 
 
 library
     ghc-options:      -Wall -Werror -O2
@@ -34,13 +24,13 @@ library
                     , Parser.Env
                     , Parser.Internal
                     , ToHtml
-    build-depends:    base ^>=4.14.3.0
+    build-depends:    base ^>=4.16.1.0
                     , containers
-                    , megaparsec
+                    , megaparsec ^>=9.2.0
                     , mtl
-                    , parser-combinators
+                    , parser-combinators ^>=1.3.0
                     , text
-                    , blaze-html
+                    , blaze-html ^>=0.9.1.0
     hs-source-dirs:   src
     default-language: Haskell2010
     default-extensions: OverloadedStrings
@@ -48,24 +38,22 @@ library
 
 executable haskell-ssg
     main-is:          Main.hs
-
-    -- Modules included in this executable, other than Main.
-    other-modules:    Files
-                    , Server
+    other-modules:    Server
                     , Opts
-
-    -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
+                    , Parsing
+                    , Building
+                    , File
     ghc-options:      -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -O2
-    build-depends:    base ^>=4.14.3.0
+    build-depends:    base ^>=4.16.1.0
                     , directory
                     , filepath
                     , haskell-ssg
-                    , megaparsec
                     , mtl
-                    , optparse-applicative
-                    , scotty
+                    , optparse-applicative ^>=0.17.0.0
+                    , scotty ^>=0.12
                     , text
+                    , data-default-class
+                    , warp
     hs-source-dirs:   app
     default-language: Haskell2010
     default-extensions: OverloadedStrings
@@ -77,11 +65,13 @@ test-suite haskell-ssg-test
     hs-source-dirs:   test
     other-modules:    ParserSpec
                     , MacroSpec
+                    , DocumentSpec
     ghc-options:      -threaded -rtsopts -with-rtsopts=-N
-    build-depends:    base ^>=4.14.3.0
+    build-depends:    base ^>=4.16.1.0
                     , haskell-ssg
                     , hspec
-                    , hspec-megaparsec
-                    , megaparsec
+                    , hspec-megaparsec ^>=2.2.0
+                    , megaparsec ^>=9.2.0
+                    , text
     default-language: Haskell2010
     default-extensions: OverloadedStrings

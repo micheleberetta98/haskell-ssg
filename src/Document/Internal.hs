@@ -1,9 +1,9 @@
 {-|
   Module      : Document.Internal
-  Description : The internals of 'Document'
+  Description : The internals of 'Document.Document'
 
   This modules contains all the necessary data types and functions to work with
-  the type 'Document', as well as all the tag mappings between the language and
+  the type 'Document.Document', as well as all the tag mappings between the language and
   HTML.
 -}
 module Document.Internal where
@@ -15,19 +15,20 @@ import           Data.Maybe
 import           Data.String
 import           Data.Text                   (Text)
 import qualified Data.Text                   as T
-import           Text.Blaze.Html5            (Attribute, AttributeValue, Html)
 import qualified Text.Blaze.Html5            as H
+import           Text.Blaze.Html5            (Attribute, AttributeValue, Html)
 import qualified Text.Blaze.Html5.Attributes as A
 import           ToHtml
 
------------- Custom types
+------------------------------------------------------------------------------------
+-- * Custom types
 
--- | A 'Document' represents the entire document in the language,
--- comprised of a 'Config' and a list of 'Content'.
+-- | A 'Document.Document' represents the entire document in the language,
+-- comprised of a 'Document.Config' and a list of 'Document.Content'.
 data Document = Document Config [Content]
   deriving (Show, Eq)
 
--- | The 'Config' of a 'Document' contains some metadata
+-- | The 'Document.Config' of a 'Document.Document' contains some metadata
 -- about the document, like for example the page title or
 -- the layout.
 data Config = Config
@@ -36,28 +37,41 @@ data Config = Config
   , configLayout    :: Text
   } deriving (Show, Eq)
 
--- | A 'Content' is essentialy a list or a single element ('Unquote' or 'Document.Internal.String').
+-- | A 'Document.Content' is essentialy a list, a macro call or a single element ('Unquote' or 'Document.Internal.String').
 data Content
   = List Text AttrList [Content]
+  | MacroCall Text [MacroArg]
   | Unquote Text
   | String Text
   deriving (Show, Eq)
 
--- | A list of attributes, represented as tuples.
-type AttrList = [(Text, Content)]
+-- | A utility type for representing macro arguments.
+data MacroArg = MacroArg Text [Content]
+  deriving (Show, Eq)
 
------------- Html conversion
+-- | A list of attributes, represented as tuples.
+newtype AttrList = AttrList [(Text, AttrPairValue)]
+  deriving (Show, Eq)
+
+-- | Possible values for the value of an attribute list's pair.
+data AttrPairValue
+  = AString Text
+  | AUnquote Text
+  deriving (Show, Eq)
+
+------------------------------------------------------------------------------------
+-- * Html conversion
 
 instance ToHtml Content where
   toHtml (String s)          = H.text s
   toHtml (List x as content) = fromMaybe (H.text "") $ M.lookup x tagMapping <*> pure as <*> pure (foldMap toHtml content)
   toHtml _                   = H.text ""
 
--- | A utility type that takes an 'AttrList' and some 'Html' body
--- to return a 'Html' object.
+-- | A utility type that represents a function that derives an 'Html' object
+-- from an 'AttrList' and some 'Html' body.
 type HtmlMapping = AttrList -> Html -> Html
 
--- | The possible list names
+-- | The possible list names.
 defaultListNames :: [Text]
 defaultListNames = M.keys tagMapping
 
@@ -86,16 +100,16 @@ tagMapping = M.fromList
 
 -- | A tag with some content.
 tag :: (Html -> Html) -> HtmlMapping
-tag t as = foldl' (H.!) t (mapMaybe toAttr as)
+tag t (AttrList as) = foldl' (H.!) t (mapMaybe toAttr as)
 
 -- | A tag without content.
 tag' :: Html -> HtmlMapping
-tag' t as _ = foldl' (H.!) t (mapMaybe toAttr as)
+tag' t (AttrList as) _ = foldl' (H.!) t (mapMaybe toAttr as)
 
 -- | Converts a tuple into an 'Attribute'.
-toAttr :: (Text, Content) -> Maybe Attribute
-toAttr (k, String v) = M.lookup k attrs <*> pure (fromString (T.unpack v))
-toAttr _             = Nothing
+toAttr :: (Text, AttrPairValue) -> Maybe Attribute
+toAttr (k, AString v) = M.lookup k attrs <*> pure (fromString (T.unpack v))
+toAttr _              = Nothing
 
 -- | The possible attribute names.
 defaultAttrNames :: [Text]

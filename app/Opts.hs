@@ -1,6 +1,14 @@
+{-|
+  Module      : Opts
+  Description : CLI options management
+
+  Here is defined the 'Options' type, which includes all command line arguments
+  that specify all the necessary folders.
+-}
 module Opts
   ( Options(..)
   , getOpts
+  , defaultOpts
   ) where
 
 import           Options.Applicative
@@ -12,6 +20,16 @@ data Options = Options
   , staticFolder       :: FilePath
   , buildFolder        :: FilePath
   , outputStaticFolder :: FilePath
+  }
+
+defaultOpts :: Options
+defaultOpts = Options
+  { srcFolder = "_src"
+  , layoutsFolder = "_layouts"
+  , macrosFolder = "_macros"
+  , buildFolder = "_build"
+  , staticFolder = "_static"
+  , outputStaticFolder = "_build/static"
   }
 
 getOpts :: IO Options
@@ -30,33 +48,33 @@ options = Options
       (  long "layouts"
       <> short 'l'
       <> metavar "LAYOUTS_FOLDER"
-      <> value "_layouts"
+      <> value (layoutsFolder defaultOpts)
       <> help "Folder with layout macros"
       )
   <*> strOption
       (  long "macros"
       <> short 'm'
       <> metavar "MACROS_FOLDER"
-      <> value "_macros"
+      <> value (macrosFolder defaultOpts)
       <> help "Folder with generic macros, not to be used as layouts"
       )
   <*> strOption
       (  long "static"
       <> short 's'
       <> metavar "STATIC_FOLDER"
-      <> value "_static"
+      <> value (staticFolder defaultOpts)
       <> help "Folder with static files"
       )
   <*> strOption
       (  long "output"
       <> short 'o'
       <> metavar "OUT_FOLDER"
-      <> value "_build"
+      <> value (buildFolder defaultOpts)
       <> help "Output folder"
       )
   <*> strOption
       (  long "out-static"
       <> metavar "OUT_STATIC_FOLDER"
-      <> value "_build/static"
+      <> value (outputStaticFolder defaultOpts)
       <> help "Output static files' folder"
       )
