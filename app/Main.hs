@@ -29,9 +29,9 @@ main =
 
 parseAndBuild :: IO ()
 parseAndBuild = do
-  ( parse
+  parse
     >>= buildFiles
-    >>= saveFiles )
+    >>= saveFiles
   `catch` \case
     NoParse es     -> prettyPrintErrors es prettyParserError
     BuildErrors es -> prettyPrintErrors es show

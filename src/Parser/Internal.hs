@@ -1,5 +1,3 @@
-{-# LANGUAGE MultiWayIf #-}
-
 {-|
   Module      : Parser.Internal
   Description : The internals of 'Parser'
@@ -159,7 +157,7 @@ macroArg = parens "(" ")" $
 -- This is a recoverable parser, and in case of an error it will consume all inputs
 -- until a single @)@ is encountered.
 attrList :: Parser AttrList
-attrList = AttrList <$> (parens "[" "]" $ many $ recover (tuple <?> "a key-value tuple"))
+attrList = AttrList <$> parens "[" "]" (many $ recover (tuple <?> "a key-value tuple"))
   where
     tuple = parens "(" ")" $ do
       o <- getOffset
