@@ -166,7 +166,7 @@ attrList = AttrList <$> parens "[" "]" (many $ recover (tuple <?> "a key-value t
       isAttrName <- lift (isValidAttrName key)
       if isAttrName
         then pure (key, value)
-        else region (setErrorOffset o) $ invalidAttrNameAt o key >> pure ("", AString "")
+        else invalidAttrNameAt o key >> pure ("", AString "")
     recover = withRecovery $ \e -> do
       registerParseError e
       void $ some (noneOf specialChars)
