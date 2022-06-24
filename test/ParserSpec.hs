@@ -87,9 +87,9 @@ parserSpec =
       parse (many macro *> many listOrMacro) "'(new-macro) '(another-one) (new-macro) (another-one)" `shouldParse` [MacroCall "new-macro" [], MacroCall "another-one" []]
 
     it "should parse attribute lists" $ do
-      parse attrList "[(class \"red\") (required)]" `shouldParse` (AttrList [("class", AString "red"), ("required", AString "")])
-      parse attrList "[(class \"red\") (href @linkValue)]" `shouldParse` (AttrList [("class", AString "red"), ("href", AUnquote "linkValue")])
-      parse attrList "[]" `shouldParse` (AttrList [])
+      parse attrList "[(class \"red\") (required)]" `shouldParse` AttrList [("class", AString "red"), ("required", AString "")]
+      parse attrList "[(class \"red\") (href @linkValue)]" `shouldParse` AttrList [("class", AString "red"), ("href", AUnquote "linkValue")]
+      parse attrList "[]" `shouldParse` AttrList []
       parse attrList "[(class (nl))]" `shouldSatisfy` isLeft
       parse attrList "[()]" `shouldSatisfy` isLeft
       parse attrList "[(class ?a)]" `shouldSatisfy` isLeft

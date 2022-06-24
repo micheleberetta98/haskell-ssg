@@ -45,7 +45,7 @@ macros =
 documentSpec :: SpecWith ()
 documentSpec = describe "Generic documents" $ do
   it "should expand a simple layout" $ do
-    applyLayout layouts doc `shouldBe` Just (
+    applyLayout layouts doc `shouldBe` Just
       [ List "html" (AttrList [])
         [ List "head" (AttrList [])
           [ List "pagetitle" (AttrList []) [String "Home page"]
@@ -58,7 +58,7 @@ documentSpec = describe "Generic documents" $ do
             ]
           ]
         ]
-      ] )
+      ]
 
   it "should expand all macros in the body content" $ do
     expandAll macros docContent `shouldBe`
@@ -67,7 +67,7 @@ documentSpec = describe "Generic documents" $ do
       ]
 
   it "should expand both macros and layouts" $ do
-    (expandAll macros <$> applyLayout layouts doc) `shouldBe` Just (
+    (expandAll macros <$> applyLayout layouts doc) `shouldBe` Just
       [ List "html" (AttrList [])
         [ List "head" (AttrList [])
           [ List "pagetitle" (AttrList []) [String "Home page"]
@@ -78,4 +78,4 @@ documentSpec = describe "Generic documents" $ do
             [String "hello world"]
           ]
         ]
-      ] )
+      ]
