@@ -46,6 +46,11 @@ parserSpec =
       parse macro "'()" `shouldSatisfy` isLeft
       parse macro "'(())" `shouldSatisfy` isLeft
 
+    it "should parse macro calls" $ do
+      parse content "(macro (arg1 \"arg1\") (arg2 \"arg2\"))" `shouldParse` MacroCall "macro" [MacroArg "arg1" [String "arg1"], MacroArg "arg2" [String "arg2"]]
+      parse content "(macro [])" `shouldSatisfy` isLeft
+      parse content "(macro \"str\")" `shouldSatisfy` isLeft
+
     it "empty macros are a thing" $ do
       parse macro "'(hi)" `shouldParse` Macro "hi" []
       parse macro "'(#)" `shouldParse` Macro "#" []
