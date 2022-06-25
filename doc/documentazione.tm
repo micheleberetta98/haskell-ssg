@@ -1,8 +1,10 @@
 <TeXmacs|2.1.1>
 
-<style|<tuple|book|british|doc|cite-author-year>>
+<style|<tuple|article|british|doc|cite-author-year>>
 
 <\body>
+  \;
+
   <doc-data|<doc-title|Static Site Generator>|<doc-author|<author-data|<author-name|Beretta
   Michele, Crippa Bianca, Toure Pape Alpha>|<\author-affiliation>
     University of Bergamo
@@ -12,9 +14,7 @@
     Formal Languages & Compilers
 
     2021-2022
-  </author-affiliation>>>|<\doc-note>
-    <cite-TeXmacs|TeXmacs:vdH:book>
-  </doc-note>>
+  </author-affiliation>>>>
 
   <chapter|Project description>
 
@@ -120,7 +120,7 @@
     <label|table:cli-args>All command line arguments and their defaults.
   </big-table>
 
-  <chapter|DSL>
+  <page-break*><chapter|DSL>
 
   The DSL (Domain Specific Language) used as source language to design the
   web pages is a LISP-esque formatting language, where each element has a 1
@@ -129,7 +129,7 @@
   be re-used, or even <with|font-shape|italic|custom layouts> for entire
   pages.
 
-  <section|Grammar>
+  <subsection|Grammar>
 
   Here is the abstract syntax of the language for a document definition and a
   macro definition.
@@ -162,7 +162,7 @@
   <with|font-shape|italic|config> section of a document is missing,
   <verbatim|"default"> will be used.
 
-  <section|Tags and attributes>
+  <subsection|Tags and attributes>
 
   All identifiers that are accepted as <with|font-shape|italic|list> names
   are visible in Table <reference|table:list-ids>, while all identifiers that
@@ -176,7 +176,7 @@
   <big-table|<block|<tformat|<twith|table-width|1par>|<twith|table-hmode|exact>|<cwith|1|39|2|2|cell-halign|c>|<cwith|1|38|2|2|cell-halign|l>|<cwith|1|21|3|3|cell-halign|l>|<cwith|22|39|3|3|cell-halign|c>|<cwith|22|38|3|3|cell-halign|l>|<cwith|1|30|4|4|cell-halign|l>|<cwith|31|39|4|4|cell-halign|l>|<cwith|1|8|5|5|cell-halign|l>|<table|<row|<cell|accept>|<cell|id>|<cell|onended>|<cell|onsubmit>|<cell|summary>>|<row|<cell|acceptCharset>|<cell|icon>|<cell|onerror>|<cell|onsuspend>|<cell|tabindex>>|<row|<cell|accesskey>|<cell|ismap>|<cell|onfocus>|<cell|ontimeupdate>|<cell|target>>|<row|<cell|action>|<cell|itemprop>|<cell|onformchange>|<cell|onundo>|<cell|title>>|<row|<cell|alt>|<cell|itemscope>|<cell|onforminput>|<cell|onunload>|<cell|type>>|<row|<cell|async>|<cell|keytype>|<cell|onhaschange>|<cell|onvolumechange>|<cell|usemap>>|<row|<cell|autocomplete>|<cell|label>|<cell|oninput>|<cell|onwaiting>|<cell|value>>|<row|<cell|autofocus>|<cell|lang>|<cell|oninvalid>|<cell|open>|<cell|width>>|<row|<cell|autoplay>|<cell|list>|<cell|onkeydown>|<cell|optimum>|<cell|wrap>>|<row|<cell|challenge>|<cell|loop>|<cell|onkeyup>|<cell|pattern>|<cell|xmlns>>|<row|<cell|charset>|<cell|low>|<cell|onload>|<cell|ping>|<cell|>>|<row|<cell|checked>|<cell|manifest>|<cell|onloadeddata>|<cell|placeholder>|<cell|>>|<row|<cell|cite>|<cell|max>|<cell|onloadedmetadata>|<cell|preload>|<cell|>>|<row|<cell|class>|<cell|maxlength>|<cell|onloadstart>|<cell|pubdate>|<cell|>>|<row|<cell|cols>|<cell|media>|<cell|onmessage>|<cell|radiogroup>|<cell|>>|<row|<cell|colspan>|<cell|method>|<cell|onmousedown>|<cell|readonly>|<cell|>>|<row|<cell|content>|<cell|min>|<cell|onmousemove>|<cell|rel>|<cell|>>|<row|<cell|contenteditable>|<cell|multiple>|<cell|onmouseout>|<cell|required>|<cell|>>|<row|<cell|contextmenu>|<cell|name>|<cell|onmouseover>|<cell|reversed>|<cell|>>|<row|<cell|controls>|<cell|novalidate>|<cell|onmouseup>|<cell|role>|<cell|>>|<row|<cell|coords>|<cell|onbeforeonload>|<cell|onmousewheel>|<cell|rows>|<cell|>>|<row|<cell|data>|<cell|onbeforeprint>|<cell|ononline>|<cell|rowspan>|<cell|>>|<row|<cell|datetime>|<cell|onblur>|<cell|onpagehide>|<cell|sandbox>|<cell|>>|<row|<cell|defer>|<cell|oncanplay>|<cell|onpause>|<cell|scope>|<cell|>>|<row|<cell|dir>|<cell|oncanplaythrough>|<cell|onplay>|<cell|scoped>|<cell|>>|<row|<cell|disabled>|<cell|onchange>|<cell|onplaying>|<cell|seamless>|<cell|>>|<row|<cell|draggable>|<cell|onclick>|<cell|onprogress>|<cell|selected>|<cell|>>|<row|<cell|enctype>|<cell|oncontextmenu>|<cell|onpropstate>|<cell|shape>|<cell|>>|<row|<cell|for>|<cell|ondblclick>|<cell|onratechange>|<cell|size>|<cell|>>|<row|<cell|formaction>|<cell|ondrag>|<cell|onreadystatechange>|<cell|sizes>|<cell|>>|<row|<cell|formenctype>|<cell|ondragend>|<cell|onredo>|<cell|span>|<cell|>>|<row|<cell|formmethod>|<cell|ondragenter>|<cell|onresize>|<cell|spellcheck>|<cell|>>|<row|<cell|formnovalidate>|<cell|ondragleave>|<cell|onscroll>|<cell|src>|<cell|>>|<row|<cell|formtarget>|<cell|ondragover>|<cell|onseeked>|<cell|srcdoc>|<cell|>>|<row|<cell|headers>|<cell|ondragstart>|<cell|onseeking>|<cell|start>|<cell|>>|<row|<cell|height>|<cell|ondrop>|<cell|onselect>|<cell|step>|<cell|>>|<row|<cell|hidden>|<cell|ondurationchange>|<cell|onstalled>|<cell|style>|<cell|>>|<row|<cell|high>|<cell|onemptied>|<cell|onstorage>|<cell|subject>|<cell|>>>>>|<label|table:tuple-key-ids>Identifiers
   accepted as attributes lists' tuple key names>
 
-  <section|Example>
+  <subsection|Example>
 
   What follows is a simple example of a <with|font-shape|italic|document>
   written in the DSL.
@@ -212,7 +212,7 @@
   <verbatim|cabal> and <verbatim|ghc>, which are part of any Haskell
   installation.
 
-  <section|Monad>
+  <subsection|Monad>
 
   In functional programming, a <with|font-series|bold|monad> is a software
   design pattern with a structure that combines functions and wraps their
@@ -239,10 +239,11 @@
   <verbatim|State Env>, another monad used to keep track of eventual macro
   declarations.
 
-  <section|Parser combination>
+  <subsection|Parser combinators>
 
-  A parser combinator is a higher-order function that takes one or more
-  parsers as input and produces a new parser as its output.
+  A <with|font-shape|italic|parser combinator> is a higher-order function
+  that takes one or more parsers as input and produces a new parser as its
+  output.
 
   To put it simply, combining parsers means that given two distinct parsers a
   third one can be made that is the sum of its part, namely, can parse both
@@ -273,8 +274,9 @@
   and non-ambiguity which, depending on the specific implementation, parser
   combinator libraries are not able to give.
 
-  <chapter|Errors>
+  <page-break*><chapter|Errors>
 
+  Errors are managed entirely by <with|font-shape|italic|Megaparsec>.
   <with|font-shape|italic|Megaparsec>, upon parsing failure, returns a
   <with|font-shape|italic|ParseError s e>, which is an abstract data type
   that represents error messages on a stream of type <verbatim|s> for errors
@@ -292,10 +294,10 @@
   </scm-code>
 
   More specifically, a <verbatim|TrivialError> is generated by Megaparsec's
-  machinery and includes an offset, a set of unexpected <verbatim|Token s>
-  (if any) and a set of expected <verbatim|Token s>. A <verbatim|FancyError>,
-  on the other way, is used for custom errors, represented by
-  <verbatim|ErrorFancy e>.
+  machinery and includes an offset, an unexpected <verbatim|Token s> (if any)
+  and a set of expected <verbatim|Token s>. A <verbatim|FancyError>, on the
+  other way, is used for custom errors, represented by <verbatim|ErrorFancy
+  e>.
 
   <\scm-code>
     <\code>
@@ -350,9 +352,13 @@
 
   \;
 
+  \;
+
   Here an example of a syntax error:
 
   <center|<image|syntax-error.png|0.8par|||>>
+
+  \;
 
   And here an example of some semantic errors:
 
@@ -369,74 +375,83 @@
 
 <\references>
   <\collection>
-    <associate|auto-1|<tuple|1|5>>
-    <associate|auto-10|<tuple|4.3|15>>
-    <associate|auto-11|<tuple|5|17>>
-    <associate|auto-12|<tuple|5.1|?>>
-    <associate|auto-13|<tuple|5.2|?>>
-    <associate|auto-14|<tuple|6|?>>
-    <associate|auto-2|<tuple|2|7>>
-    <associate|auto-3|<tuple|3|9>>
-    <associate|auto-4|<tuple|3.1|9>>
-    <associate|auto-5|<tuple|4|11>>
-    <associate|auto-6|<tuple|4.1|11>>
-    <associate|auto-7|<tuple|4.2|12>>
-    <associate|auto-8|<tuple|4.1|15>>
-    <associate|auto-9|<tuple|4.2|15>>
-    <associate|table:cli-args|<tuple|3.1|9>>
-    <associate|table:list-ids|<tuple|4.1|?>>
-    <associate|table:tuple-key-ids|<tuple|4.2|?>>
+    <associate|auto-1|<tuple|1|1>>
+    <associate|auto-10|<tuple|3|4>>
+    <associate|auto-11|<tuple|5|5>>
+    <associate|auto-12|<tuple|1|5>>
+    <associate|auto-13|<tuple|2|5>>
+    <associate|auto-14|<tuple|6|6>>
+    <associate|auto-2|<tuple|2|1>>
+    <associate|auto-3|<tuple|3|2>>
+    <associate|auto-4|<tuple|1|2>>
+    <associate|auto-5|<tuple|4|3>>
+    <associate|auto-6|<tuple|1|3>>
+    <associate|auto-7|<tuple|2|3>>
+    <associate|auto-8|<tuple|2|3>>
+    <associate|auto-9|<tuple|3|4>>
+    <associate|table:cli-args|<tuple|1|2>>
+    <associate|table:list-ids|<tuple|2|3>>
+    <associate|table:tuple-key-ids|<tuple|3|4>>
   </collection>
 </references>
 
 <\auxiliary>
   <\collection>
-    <\associate|bib>
-      TeXmacs:vdH:book
-    </associate>
     <\associate|table>
-      <tuple|normal|<\surround|<hidden-binding|<tuple>|3.1>|>
+      <tuple|normal|<\surround|<hidden-binding|<tuple>|1>|>
         All command line arguments and their defaults.
       </surround>|<pageref|auto-4>>
+
+      <tuple|normal|<surround|<hidden-binding|<tuple>|2>||Identifiers
+      accepted as list names>|<pageref|auto-8>>
+
+      <tuple|normal|<surround|<hidden-binding|<tuple>|3>||Identifiers
+      accepted as attributes lists' tuple key names>|<pageref|auto-9>>
     </associate>
     <\associate|toc>
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|1<space|2spc>Project
+      <vspace*|2fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|font-size|<quote|1.19>|1<space|2spc>Project
       description> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-1><vspace|0.5fn>
+      <no-break><pageref|auto-1><vspace|1fn>
 
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|2<space|2spc>Design
+      <vspace*|2fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|font-size|<quote|1.19>|2<space|2spc>Design
       goals> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-2><vspace|0.5fn>
+      <no-break><pageref|auto-2><vspace|1fn>
 
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|3<space|2spc>Usage>
+      <vspace*|2fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|font-size|<quote|1.19>|3<space|2spc>Usage>
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-3><vspace|0.5fn>
+      <no-break><pageref|auto-3><vspace|1fn>
 
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|4<space|2spc>DSL>
+      <vspace*|2fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|font-size|<quote|1.19>|4<space|2spc>DSL>
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-5><vspace|0.5fn>
+      <no-break><pageref|auto-5><vspace|1fn>
 
-      4.1<space|2spc>Grammar <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-6>
-
-      4.2<space|2spc>Tags and attributes <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-7>
-
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|5<space|2spc>Parser's
-      details> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-8><vspace|0.5fn>
-
-      <with|par-left|<quote|1tab>|5.0.1<space|2spc>Monad
+      <with|par-left|<quote|1tab>|1<space|2spc>Grammar
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-9>>
+      <no-break><pageref|auto-6>>
 
-      <with|par-left|<quote|1tab>|5.0.2<space|2spc>Parser combination
+      <with|par-left|<quote|1tab>|2<space|2spc>Tags and attributes
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-7>>
+
+      <with|par-left|<quote|1tab>|3<space|2spc>Example
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-10>>
 
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|6<space|2spc>Errors>
+      <vspace*|2fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|font-size|<quote|1.19>|5<space|2spc>Parser's
+      details> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-11><vspace|1fn>
+
+      <with|par-left|<quote|1tab>|1<space|2spc>Monad
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-11><vspace|0.5fn>
+      <no-break><pageref|auto-12>>
+
+      <with|par-left|<quote|1tab>|2<space|2spc>Parser combinators
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-13>>
+
+      <vspace*|2fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|font-size|<quote|1.19>|6<space|2spc>Errors>
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-14><vspace|1fn>
     </associate>
   </collection>
 </auxiliary>
