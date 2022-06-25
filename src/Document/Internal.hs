@@ -96,6 +96,9 @@ tagMapping = M.fromList
   , ("div",       tag  H.div)
   , ("style",     tag  H.style)
   , ("link_",     tag' H.link)
+  , ("list",      tag H.ul)
+  , ("enumerate", tag H.ol)
+  , ("item",      tag H.li)
   ]
 
 -- | A tag with some content.
