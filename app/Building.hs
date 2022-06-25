@@ -5,9 +5,7 @@
   This modules applies macros and layouts in order to obtain renderable data.
 -}
 module Building
-  ( BuildError
-  , buildFiles
-  , build
+  ( buildFiles
   , renderFile
   )
 where
@@ -17,22 +15,12 @@ import           Control.Monad
 import           Data.Bifunctor
 import           Data.List
 import           Document
+import           ErrorTypes
 import           File
 import           Macro
 import           ToHtml
 
 -- | Some errors can appear when building files, such as a layout or a 'Macro' missing
-newtype BuildError = NoLayoutFound FilePath
-
--- | A list of 'BuildError'
-newtype BuildErrors = BuildErrors [BuildError]
-  deriving (Show)
-
-instance Exception BuildErrors
-
-instance Show BuildError where
-  show (NoLayoutFound p) = concat ["(!) Something went wrong at ", p, ": maybe the layout doesn't exist?"]
-
 buildFiles :: ([Layout], [Macro], [File Document]) -> IO [File [Content]]
 buildFiles (layouts, macros, docs) = do
   let (buildErrors, finalDocs) = separateErrors $ map (build layouts macros) docs

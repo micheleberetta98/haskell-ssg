@@ -5,7 +5,7 @@
   This modules deals with parsing source files and building all the internal
   representations.
 -}
-module Parsing (parse, NoParse) where
+module Parsing (parse) where
 
 import           Control.Exception
 import           Control.Monad.State
@@ -13,17 +13,13 @@ import           Data.Bifunctor
 import           Data.List
 import qualified Data.Text.IO        as T
 import           Document
+import           ErrorTypes
 import           File
 import           Macro
 import           Opts
 import           Parser
 
 type WithError = Either ParserError
-
-newtype NoParse = NoParse [ParserError]
-  deriving (Show)
-
-instance Exception NoParse
 
 -- | IO action that parses all layouts, macros and documents
 parse :: IO ([Layout], [Macro], [File Document])

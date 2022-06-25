@@ -5,6 +5,7 @@ module Main where
 import           Building
 import           Control.Exception
 import           Document
+import           ErrorTypes
 import           File
 import           Opts
 import           Parser
@@ -13,12 +14,6 @@ import           Server
 import           System.IO
 
 type WithError = Either ParserError
-
--- | Custom data types for parsing and building errors
-data Errors = NoParse [ParserError] | BuildErrors [BuildError]
-  deriving (Show)
-
-instance Exception Errors
 
 main :: IO ()
 main =
