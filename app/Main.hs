@@ -13,8 +13,6 @@ import           Parsing
 import           Server
 import           System.IO
 
-type WithError = Either ParserError
-
 main :: IO ()
 main =
   parseAndBuild
